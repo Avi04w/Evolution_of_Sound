@@ -2,7 +2,7 @@
   const LAT_RANGE = [-60, 75];
   const LON_RANGE = [-170, 170];
   const VALID_RANK_MIN = 1;
-  const VALID_RANK_MAX = 100;
+  const VALID_RANK_MAX = 200;
   const DATA_PATHS = ["temp_dataset.csv", "data/processed/temp_dataset.csv"];
   const WORLD_PATHS = [
     "world-110m.json",
@@ -51,8 +51,8 @@
     timelineStartYear: null,
     timelineEndYear: null,
     isPlaying: false,
-    playSpeedMs: 800, // TODO Step 2: Provide reactive speed select for playback speed adjustments.
-    windowSizeWeeks: 8,
+    playSpeedMs: 200, // TODO Step 2: Provide reactive speed select for playback speed adjustments.
+    windowSizeWeeks: 52,
     timerId: null,
   };
 
@@ -64,6 +64,7 @@
     yearToFirstWeek: new Map(),
     yearsAscending: [],
     geoLookupSize: 0,
+    yearTopTracks: new Map(),
   };
 
   // TODO Step 2: Add keyboard controls (Space/Arrow keys) for playback interaction.
@@ -109,6 +110,7 @@
     const coordCache = new Map();
     const parsedRecords = [];
     const dateKeys = new Set();
+    const yearTrackBest = new Map();
 
     for (const row of rows) {
       const parsedDate = row.date ? new Date(row.date) : null;
@@ -141,7 +143,7 @@
       const isoDate = parsedDate.toISOString().split("T")[0];
       dateKeys.add(isoDate);
 
-      parsedRecords.push({
+      const record = {
         trackKey,
         artists: row.artists || "",
         track_name: row.track_name || "",
@@ -151,7 +153,19 @@
         isoDate,
         year: parsedDate.getUTCFullYear(),
         geo,
-      });
+      };
+
+      parsedRecords.push(record);
+
+      let yearMap = yearTrackBest.get(record.year);
+      if (!yearMap) {
+        yearMap = new Map();
+        yearTrackBest.set(record.year, yearMap);
+      }
+      const existing = yearMap.get(trackKey);
+      if (!existing || rank < existing.rank) {
+        yearMap.set(trackKey, record);
+      }
     }
 
     parsedRecords.sort((a, b) => a.date - b.date);
@@ -180,6 +194,15 @@
       (a, b) => a - b
     );
 
+    const yearTopTracks = new Map();
+    for (const [year, trackMap] of yearTrackBest.entries()) {
+      const entries = Array.from(trackMap.values())
+        .filter((item) => typeof item.weekIndex === "number")
+        .sort((a, b) => a.rank - b.rank)
+        .slice(0, 200);
+      yearTopTracks.set(year, entries);
+    }
+
     return {
       records: parsedRecords,
       uniqueWeeks: sortedIsoDates,
@@ -187,30 +210,13 @@
       weekBuckets,
       yearToFirstWeek,
       yearsAscending,
+      yearTopTracks,
     };
   }
 
-  function getWeekRows(weekIndex) {
-    return dataStore.weekBuckets.get(weekIndex) || [];
-  }
-
-  function getTop10(rows) {
-    const sorted = [...rows].sort((a, b) => a.rank - b.rank);
-    const uniqueTopEntries = [];
-    const seenTracks = new Set();
-
-    for (const entry of sorted) {
-      const dedupeKey = `${entry.track_name}|||${entry.artists}`;
-      if (seenTracks.has(dedupeKey)) {
-        continue;
-      }
-      seenTracks.add(dedupeKey);
-      uniqueTopEntries.push(entry);
-      if (uniqueTopEntries.length === 10) {
-        break;
-      }
-    }
-    return uniqueTopEntries;
+  function getTopSongsForYear(year, limit = 200) {
+    const songs = dataStore.yearTopTracks.get(year) || [];
+    return typeof limit === "number" ? songs.slice(0, limit) : songs;
   }
 
   function formatDate(dateString) {
@@ -228,22 +234,23 @@
     }
 
     bodyEl.innerHTML = "";
-    const weekRows = getWeekRows(weekIndex);
-    const topTen = getTop10(weekRows);
-
     const isoDate = dataStore.weeks[weekIndex];
+    const currentYear = isoDate ? Number.parseInt(isoDate.slice(0, 4), 10) : null;
+
     if (dom.tracksTitle) {
-      dom.tracksTitle.textContent = isoDate
-        ? `Top 10 this week (${formatDate(isoDate)})`
-        : "Top 10 this week";
+      dom.tracksTitle.textContent = currentYear
+        ? `Top 200 tracks · ${currentYear}`
+        : "Top 200 tracks";
     }
 
-    if (!topTen.length) {
+    const topSongs = currentYear ? getTopSongsForYear(currentYear, 200) : [];
+
+    if (!topSongs.length) {
       const row = document.createElement("tr");
       const cell = document.createElement("td");
       cell.colSpan = 4;
       cell.className = "tracks-table__placeholder";
-      cell.textContent = "No rankings for this week.";
+      cell.textContent = "No rankings available for this year.";
       row.appendChild(cell);
       bodyEl.appendChild(row);
       if (dom.tracksNote) {
@@ -253,7 +260,7 @@
       return;
     }
 
-    for (const entry of topTen) {
+    topSongs.forEach((entry) => {
       const row = document.createElement("tr");
       row.dataset.trackKey = entry.trackKey;
       row.title = `${entry.track_name} by ${entry.artists}`;
@@ -272,16 +279,17 @@
       }
 
       bodyEl.appendChild(row);
-    }
+    });
 
     if (dom.tracksNote) {
-      if (topTen.length < 10) {
-        dom.tracksNote.textContent = `Only ${topTen.length} entr${
-          topTen.length === 1 ? "y" : "ies"
-        } this week.`;
+      if (topSongs.length < 200) {
+        dom.tracksNote.textContent = `Only ${topSongs.length} entr${
+          topSongs.length === 1 ? "y" : "ies"
+        } available for ${currentYear || "this year"}.`;
         dom.tracksNote.hidden = false;
       } else {
-        dom.tracksNote.hidden = true;
+        dom.tracksNote.textContent = `Showing top 200 unique tracks ranked by best Hot 100 position in ${currentYear || "the selected year"}.`;
+        dom.tracksNote.hidden = false;
       }
     }
     // TODO Step 4: Clicking a track row should highlight and center the matching map pin.
@@ -304,8 +312,8 @@
     return {
       ...row,
       delta,
-      opacityTarget: clamp(Math.exp(-delta / 6), 0.2, 1),
-      radius: Math.max(4, 16 - row.rank * 0.8),
+      opacityTarget: clamp(Math.exp(-delta / 16), 0.18, 1),
+      radius: Math.max(3, 11 - row.rank * 0.03),
     };
   }
 
@@ -314,48 +322,30 @@
       return [];
     }
 
-    const anchorRows = getTop10(getWeekRows(centerIndex));
-    if (!anchorRows.length) {
+    const iso = dataStore.weeks[centerIndex];
+    if (!iso) {
       return [];
     }
 
-    const anchorKeys = new Set(anchorRows.map((row) => row.trackKey));
-
-    const minWeek = Math.max(0, centerIndex - uiState.windowSizeWeeks);
-    const maxWeek = Math.min(
-      dataStore.weeks.length - 1,
-      centerIndex + uiState.windowSizeWeeks
-    );
-
-    const trackMap = new Map();
-
-    for (const row of anchorRows) {
-      trackMap.set(row.trackKey, createPinDatum(row, 0));
+    const targetYear = Number.parseInt(iso.slice(0, 4), 10);
+    const songs = getTopSongsForYear(targetYear, 200);
+    if (!songs.length) {
+      return [];
     }
 
-    for (let week = minWeek; week <= maxWeek; week += 1) {
-      const rows = getWeekRows(week);
-      for (const row of rows) {
-        if (!row.geo || row.rank > 10 || !anchorKeys.has(row.trackKey)) {
-          continue;
-        }
-        const key = row.trackKey;
-        const delta = Math.abs(centerIndex - row.weekIndex);
-        if (delta > uiState.windowSizeWeeks) {
-          continue;
-        }
-        const existing = trackMap.get(key);
-        if (
-          !existing ||
-          delta < existing.delta ||
-          (delta === existing.delta && row.rank < existing.rank)
-        ) {
-          trackMap.set(key, createPinDatum(row, delta));
-        }
+    const pins = [];
+    for (const entry of songs) {
+      if (!entry.geo || typeof entry.weekIndex !== "number") {
+        continue;
       }
+      const delta = Math.abs(centerIndex - entry.weekIndex);
+      if (delta > uiState.windowSizeWeeks) {
+        continue;
+      }
+      pins.push(createPinDatum(entry, delta));
     }
 
-    return Array.from(trackMap.values());
+    return pins;
   }
 
   function projectPoint(row) {
@@ -609,7 +599,10 @@
       return;
     }
 
-    const years = dataStore.yearsAscending;
+    const years = Array.from(dataStore.yearTopTracks.keys()).sort((a, b) => a - b);
+    if (!years.length) {
+      return;
+    }
     const populate = (select) => {
       select.innerHTML = "";
       for (const year of years) {
@@ -976,6 +969,7 @@
         yearToFirstWeek: shaped.yearToFirstWeek,
         yearsAscending: shaped.yearsAscending,
         geoLookupSize: shaped.geoLookupSize,
+        yearTopTracks: shaped.yearTopTracks,
       });
 
       await initMap();
