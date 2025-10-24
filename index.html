@@ -10,6 +10,7 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/bubble.css" />
 
     <!-- GOOGLE FONTS -->
     <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,500,400italic,300italic' rel='stylesheet' type='text/css'>
@@ -18,7 +19,7 @@
 
 <body>
 
-<header class="text-center py-5">
+<header id="hook" class="text-center py-5">
     <h1 class="display-5 fw-bold text-light">The Evolution of Sound</h1>
     <p class="lead text-secondary">Visualizing 30 Years of Pop Culture Through Data</p>
 </header>
@@ -29,6 +30,11 @@
         while becoming increasingly global as regional genres reshape the mainstream.
     </p>
 </section>
+
+<div id="bubble-viz-container">
+    <svg id="bubble-viz"></svg>
+    <div id="bubble-tooltip" class="bubble-tooltip"></div>
+</div>
 
 <main class="container">
     <div class="row mb-5">  
@@ -51,7 +57,15 @@
         <div class="col-md-12 chart-container">
             <h2 class="chart-title">Global Sounds</h2>
             <p class="chart-description">With the accessibility of music production tools and platforms, artists from diverse backgrounds can share their sounds with the world. This has led to music becoming a melting pot of influences, blending genres and cultures.</p>
-            <div id="vis-global" class="chart-space"></div>
+            <div id="vis-global" class="chart-space">
+                <iframe
+                    src="geographical.html"
+                    title="Geographical Music Explorer"
+                    loading="lazy"
+                    class="geographical-embed"
+                    allowfullscreen
+                ></iframe>
+            </div>
         </div>
     </div>
 </main>
@@ -89,5 +103,6 @@
 <script src="js/vis2.js"></script>
 
 
+<script src="js/vis_bubble.js"></script>
 </body>
 </html>
