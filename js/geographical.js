@@ -51,7 +51,7 @@
     timelineStartYear: null,
     timelineEndYear: null,
     isPlaying: false,
-    playSpeedMs: 200, // TODO Step 2: Provide reactive speed select for playback speed adjustments.
+    playSpeedMs: 800, // TODO Step 2: Provide reactive speed select for playback speed adjustments.
     windowSizeWeeks: 8,
     timerId: null,
   };
