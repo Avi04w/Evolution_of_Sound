@@ -18,8 +18,6 @@
 </head>
 
 <body>
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
 <header id="hook" class="text-center py-5">
     <h1 class="display-5 fw-bold text-light">The Evolution of Sound</h1>
@@ -39,20 +37,61 @@
 </div>
 
 <main class="container">
+    <div class="row mb-5">  
+        <div class="col-md-12 chart-container">
+            <h2 class="chart-title">A Universe of Hits</h2>
+            <p class="chart-description">Explore the landscape of our data–see how different audio features cluster together and relate to one another.</p>
+            <div id="vis-universe" class="chart-space"></div>
+        </div>
+    </div>
+
     <div class="row mb-5">
         <div class="col-md-12 chart-container">
             <h2 class="chart-title">The DNA of Music</h2>
-            <div id="vis_dna" class="chart-space"></div>
+            <p class="chart-description">See how the sounds of each year has evolved over time.</p>
+            <div id="vis-dna" class="chart-space"></div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-12 chart-container">
+            <h2 class="chart-title">Global Sounds</h2>
+            <p class="chart-description">With the accessibility of music production tools and platforms, artists from diverse backgrounds can share their sounds with the world. This has led to music becoming a melting pot of influences, blending genres and cultures.</p>
+            <div id="vis-global" class="chart-space">
+                <iframe
+                    src="geographical.html"
+                    title="Geographical Music Explorer"
+                    loading="lazy"
+                    class="geographical-embed"
+                    allowfullscreen
+                ></iframe>
+            </div>
         </div>
     </div>
 </main>
+
+<section class="container text-left mb-5">
+    <p class="conclusion-message">
+        Through analyzing three decades of popular music, we uncover a story of transformation—melodically, culturally, and globally. Music has shifted from [x] to [y], reflecting broader societal changes and the blending of cultures worldwide.
+        <!-- TODO need more analysis on the specific trends -->
+    </p>
+
+    <p class="conclusion-message">
+        This style of storytelling through data visualization highlights the best aspects of both art and science, providing insights into how music both shapes and is shaped by the world around us. Check out these similar visualizations for more explorations into the intersection of data and culture:
+    </p>
+
+    <ul>
+        <li><a href="https://musiclab.chromeexperiments.com/Experiments">Music Lab by Google</a></li>
+        <!-- TODO add more websites about movies, music, pop culture, etc -->
+    </ul>
+</section>
 
 <footer class="text-center py-4">
     Created by Avi Walia, Eric Liang, Ethan Liu, Taemin Kim, and Kevin Hu · CSC316 · University of Toronto
 </footer>
 
-
-<!-- Visualization scripts -->
+<!-- Visualization & vendor scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="js/vis_dna.js"></script>
 <script src="js/vis_bubble.js"></script>

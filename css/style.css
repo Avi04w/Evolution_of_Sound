@@ -1,55 +1,114 @@
+:root {
+  --bg: #0b0f16;
+  --panel-bg: #111827;
+  --card-bg: #0e1624;
+  --text: #cfd6ea;
+  --muted: #9da5be;
+  --max-copy-width: 800px;
+  --copy-size: 1.2rem;
+  --copy-line-height: 1.6;
+}
+
 body {
-    background-color: #0b0f16;
-    color: #000000;
-    font-family: 'Inter', system-ui, sans-serif;
-    margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+  margin: 0;
 }
 
 header {
-    background: transparent;
+  background: transparent;
 }
 
-.main-message {
-    max-width: 800px;
-    margin: 0 auto;
-    font-size: 1.2rem;
-    line-height: 1.6;
-    color: #cfd6ea;
+.main-message,
+.conclusion-message,
+ul {
+  max-width: var(--max-copy-width);
+  margin: 0 auto;
+  font-size: var(--copy-size);
+  line-height: var(--copy-line-height);
+  color: var(--text);
+  text-align: left;
+}
+
+.main-message,
+.conclusion-message {
+  margin-bottom: 0.9rem;
+}
+
+ul {
+  padding-left: 1.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+ul li {
+  margin-bottom: 0.45rem;
 }
 
 .chart-container {
-    background: #111827;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: #111827;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .chart-title {
-    text-align: center;
-    font-weight: 600;
-    color: #f0f3ff;
-    margin-bottom: 0.8rem;
+  text-align: center;
+  font-weight: 600;
+  color: #f0f3ff;
+  margin-bottom: 0.8rem;
+}
+
+/* Small caption/description under chart titles */
+.chart-description {
+  max-width: var(--max-copy-width);
+  margin: 0 auto 0.8rem auto;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--muted);
+  text-align: center;
 }
 
 .chart-space {
-    width: 100%;
-    height: 550px;
-    background: #0e1624;
-    border-radius: 10px;
-    overflow: hidden;
+  width: 100%;
+  height: 550px;
+  background: #0e1624;
+  border-radius: 10px;
+  overflow: hidden;
 
-    /* Center child SVG */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* Center child SVG */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+#vis-global {
+  height: auto;
+  min-height: 620px;
+  padding: 0;
+  display: block;
+}
+
+#vis-global .geographical-embed {
+  min-height: 720px;
+}
+
+.geographical-embed {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+  border: none;
+  background: #0e1624;
+  flex: 1 1 auto;
+}
 
 footer {
-    font-size: 0.9rem;
-    color: #9da5be;
-    border-top: 1px solid #1f2937;
-    margin-top: 2rem;
+  font-size: 0.9rem;
+  color: #9da5be;
+  border-top: 1px solid #1f2937;
+  margin-top: 2rem;
 }
 
 *.unselectable {
