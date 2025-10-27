@@ -189,10 +189,12 @@ class BubblePlayerViz {
 
 document.addEventListener("DOMContentLoaded", () => {
   d3.csv("data/processed/top_hot_100_per_year.csv").then((data) => {
+    new VinylRecord().loadImage(data[0]["Image URL"]);
+
     new BubblePlayerViz({
       selector: "#bubble-viz",
       centerSelector: "#bubble-viz-container",
       data: data.toSorted((a, b) => b["Weeks in Charts"] - a["Weeks in Charts"])
     });
-  })
+  });
 })
