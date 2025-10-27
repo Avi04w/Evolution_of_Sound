@@ -1,5 +1,5 @@
 class BubblePlayerViz {
-  constructor({ selector, data, centerSelector, songsPath = "./songs/" }) {
+  constructor({ selector, data, centerSelector, recordPlayer, songsPath = "./songs/" }) {
     this.svg = d3.select(selector);
     this.centerEl = document.querySelector(centerSelector);
     this.data = data;
@@ -7,6 +7,7 @@ class BubblePlayerViz {
     this.audioEl = document.getElementById("player");
     this.activeBubble = null;
     this.currentSongId = null;
+    this.recordPlayer = recordPlayer;
 
     this.init();
     this.render();
@@ -161,11 +162,12 @@ class BubblePlayerViz {
     if (d.Year === this.currentSongId && !this.audioEl.paused) {
       this.audioEl.pause();
       this.updateLabels(d.Year, false);
-      return
+      return;
     }
 
     this.audioEl.src = songUrl;
     this.audioEl.play().catch(err => console.error("Audio error:", err));
+    this.recordPlayer.loadSong(d["Image URL"]);
 
     this.currentSongId = d.Year;
 
@@ -189,12 +191,13 @@ class BubblePlayerViz {
 
 document.addEventListener("DOMContentLoaded", () => {
   d3.csv("data/processed/top_hot_100_per_year.csv").then((data) => {
-    new VinylRecord().loadImage(data[0]["Image URL"]);
+    const recordPlayer = new VinylRecord();
 
     new BubblePlayerViz({
       selector: "#bubble-viz",
       centerSelector: "#bubble-viz-container",
-      data: data.toSorted((a, b) => b["Weeks in Charts"] - a["Weeks in Charts"])
+      data: data.toSorted((a, b) => b["Weeks in Charts"] - a["Weeks in Charts"]),
+      recordPlayer: recordPlayer,
     });
   });
 })
