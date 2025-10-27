@@ -1,1 +1,5 @@
-data/processed/track_artists.ndjson
+.vscode
+.DS_Store
+.cache
+*.ipynb
+data/raw
