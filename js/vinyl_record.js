@@ -7,6 +7,11 @@ class VinylRecord {
   loadSong(imageUrl) {
     this.imageEl.style.removeProperty("display");
     this.imageEl.src = imageUrl;
-    this.outerShell.classList.add("rotate-infinite")
+    this.outerShell.classList.add("rotate-infinite");
+    this.outerShell.style.animationPlayState = "running";
+  }
+
+  stopSong() {
+    this.outerShell.style.animationPlayState = "paused";
   }
 }

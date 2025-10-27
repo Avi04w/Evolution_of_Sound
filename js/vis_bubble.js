@@ -162,6 +162,7 @@ class BubblePlayerViz {
     if (d.Year === this.currentSongId && !this.audioEl.paused) {
       this.audioEl.pause();
       this.updateLabels(d.Year, false);
+      this.recordPlayer.stopSong();
       return;
     }
 
