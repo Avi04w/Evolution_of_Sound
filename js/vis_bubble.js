@@ -6,6 +6,7 @@ class BubblePlayerViz {
     this.songsPath = songsPath;
     this.currentAudio = null;
     this.activeBubble = null;
+    this.currentSongId = null;
 
     this.init();
     this.render();
@@ -99,11 +100,20 @@ class BubblePlayerViz {
 
   showTooltip(event, d) {
     if (this.hideTimeout) clearTimeout(this.hideTimeout);
+
+    const chartedDate = new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(new Date(d.Date));
+
     this.tooltip
       .style("opacity", 1)
       .html(`
-        <strong>${d.track_name}</strong><br>
-        Tempo: ${d.tempo}
+        <strong style="font-size: 1.5em;">${d.Song} - ${d.Artist}</strong><br>
+        Charted Date: ${chartedDate} <br>
+        Weeks charted: ${parseInt(d["Weeks in Charts"])} <br>
+        Peak Position: ${d["Peak Position"]} <br>
       `);
     this.moveTooltip(event);
   }
@@ -111,7 +121,7 @@ class BubblePlayerViz {
   moveTooltip(event) {
     const [x, y] = d3.pointer(event);
     this.tooltip
-      .style("left", `${x + 50}px`)
+      .style("left", `${x + 100}px`)
       .style("top", `${y + 400}px`);
   }
 
@@ -124,14 +134,15 @@ class BubblePlayerViz {
   }
 
   handleBubbleClick(event, d) {
-    const songUrl = `${this.songsPath}${d.track_id}.mp3`;
+    const songUrl = `${this.songsPath}${d.Year}.mp3`;
 
     if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio.currentTime = 0;
       this.currentAudio = null;
-      this.updateLabels(d.track_id, false);
-      return;
+      this.updateLabels(d.Year, false);
+
+      if (d.Year === this.currentSongId) return;
     }
 
     if (this.activeBubble) {
@@ -142,17 +153,18 @@ class BubblePlayerViz {
     audio.play().catch(err => console.error("Audio error:", err));
 
     this.currentAudio = audio;
+    this.currentSongId = d.Year
 
     this.activeBubble = d3.select(event.currentTarget)
       .attr("stroke", "#fff")
       .attr("stroke-width", 3);
 
-    this.updateLabels(d.track_id, true);
+    this.updateLabels(d.Year, true);
   }
 
   updateLabels(activeId, isPlaying) {
     this.labels.text(d => {
-      if (activeId && d.track_id === activeId) {
+      if (activeId && d.Year === activeId) {
         return isPlaying ? "❚❚" : "▶";
       }
       return "▶";
