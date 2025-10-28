@@ -4,6 +4,7 @@ class VinylRecord {
     this.imageEl = document.getElementById("record-player-image");
     this.audioEl = document.getElementById("player");
     this.pauseEl = document.getElementById("record-player-pause");
+    this.playerArmEl = document.getElementById("record-player-arm");
     this.playing = false;
 
     this.outerShell.addEventListener("mouseenter", () => this.showPausePanel());
@@ -31,6 +32,8 @@ class VinylRecord {
     this.outerShell.style.animationPlayState = "running";
     this.pauseEl.style.animationPlayState = "running";
     this.pauseEl.querySelector("span").textContent = "❚❚";
+    this.playerArmEl.classList.remove("arm-animate-out");
+    this.playerArmEl.classList.add("arm-animate-in");
   }
 
   pause() {
@@ -39,6 +42,8 @@ class VinylRecord {
     this.pauseEl.style.animationPlayState = "paused";
     this.audioEl.pause();
     this.pauseEl.querySelector("span").textContent = "▶";
+    this.playerArmEl.classList.remove("arm-animate-in");
+    this.playerArmEl.classList.add("arm-animate-out");
   }
 
   isPaused() {

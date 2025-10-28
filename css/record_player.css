@@ -87,3 +87,35 @@
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+#record-player-arm {
+  position: absolute;
+  top: -70%;
+  right: -85px;
+  width: 250px;
+  height: 10px;
+  background: linear-gradient(to right, #555555, #222222);
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  border-left: 6px solid rgb(232, 194, 96);
+  transform-origin: right center;
+  transform: rotate(-70deg);
+  border-radius: 3px;
+}
+
+.arm-animate-in {
+  animation: armMoveIn 0.3s ease-in-out forwards;
+}
+
+.arm-animate-out {
+  animation: armMoveOut 0.3s ease-in-out forwards;
+}
+
+@keyframes armMoveIn {
+  from { transform: rotate(-70deg); }
+  to { transform: rotate(-60deg); }
+}
+
+@keyframes armMoveOut {
+  from { transform: rotate(-60deg); }
+  to { transform: rotate(-70deg); }
+}
