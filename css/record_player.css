@@ -20,7 +20,7 @@
 #record-player-shell-out {
   width: 100%;
   height: 100%;
-  border: solid rgba(255, 255, 255, 0.8) 2px;
+  border: solid rgba(255, 255, 255, 0.7) 2px;
 }
 
 #record-player-shell-mid,
@@ -73,14 +73,9 @@
   transform: translate(-50%, -50%) rotate(56deg);
 }
 
-.rotate-infinite,
-.rotate-infinite-reverse {
+.rotate-infinite {
   animation: spin 6s linear infinite;
   transform-origin: center;
-}
-
-.rotate-infinite-reverse {  /* for canceling rotate-infinite */
-  animation-direction: reverse;
 }
 
 @keyframes spin {
