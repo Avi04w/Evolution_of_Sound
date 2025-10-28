@@ -1,0 +1,90 @@
+/* ========= host panel for the treemap section ========= */
+.chart-container:has(#vis2) {
+    position: relative;                 /* z-index context for title */
+    padding: 28px 24px 48px;
+    border-radius: 14px;
+    overflow: visible;                  /* allow card shadow / tooltip */
+}
+
+/* ========= big white title with inline year select ========= */
+.chart-container:has(#vis2) .chart-title {
+    position: relative;
+    z-index: 3;                         /* above the card/SVG */
+    color: #fff;
+    font-weight: 800;
+    font-size: clamp(2.0rem, 3vw, 2.6rem);
+    line-height: 1.1;
+
+    display: flex;                      /* center the text + select */
+    align-items: baseline;
+    justify-content: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+    text-align: center;
+    width: 100%;
+    margin: 0 0 12px;
+}
+
+.chart-container:has(#vis2) .chart-title select {
+    background: #1a1b1e;
+    color: #e5e5e5;
+    border: 1px solid #30333a;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: clamp(1.1rem, 2vw, 1.25rem);
+    line-height: 1.2;
+    appearance: none;
+    cursor: pointer;
+    align-self: center;                 /* nice vertical align on wrap */
+}
+
+/* ========= treemap wrapper + card ========= */
+#vis2 {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+    margin: 0 auto;
+}
+#vis2.chart-space { overflow: visible !important; }
+
+#vis2 .vis2-card {
+    /* card chrome; internal scroller holds the padding/scroll */
+    background: #0d0d0d;
+    border: 1px solid #1f2329;
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.55);
+    padding: 0;
+    width: 100%;
+    margin-top: 12px;
+
+    /* fixed window height so ONLY the viz scrolls */
+    height: clamp(460px, 68vh, 820px);
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========= scrollable window for the SVG ========= */
+#vis2 .vis2-scroll {
+    flex: 1 1 auto;          /* fill the card height */
+    overflow-y: auto;         /* vertical scroll only */
+    overflow-x: hidden;
+    padding: 16px;            /* inner padding around the SVG */
+    border-radius: 16px;
+    scrollbar-gutter: stable both-edges;
+}
+
+/* the SVG itself can be taller than the window; let JS set height */
+#vis2 .vis2-scroll > svg {
+    display: block;
+    width: 100%;
+    border-radius: 14px;
+    background: #111214;      /* matches card in JS */
+    border: 1px solid #212329;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.5);
+}
+
+/* optional: nicer focus ring on the year select */
+.chart-container:has(#vis2) .chart-title select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(109, 170, 255, 0.35);
+}

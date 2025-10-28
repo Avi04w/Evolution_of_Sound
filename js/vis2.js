@@ -1,488 +1,406 @@
+<!-- ensure d3 v7 is loaded before this script -->
+const HEADER_H = 48;
+const CONFIG = {
+  container: "#vis2",
+  csvPath: "data/processed/temp_dataset.csv",
+  topNGenres: 12,
+  maxTracksShown: 400,
+  font: "Inter, system-ui, Roboto, sans-serif"
+};
 
-// js/vis2.js
-// "How Genres Defined YEAR's Music Scene"
-// zoomable treemap with year dropdown
-// requires d3 v7 (already loaded in index.html)
-
-(function () {
+  (function () {
   const d3 = window.d3;
 
-  // tiny uid helper (replacement for DOM.uid)
-  function makeUid(prefix = "uid") {
-    let id = 0;
-    return function () {
-      id += 1;
-      return `${prefix}-${id}`;
-    };
-  }
-  const uidLeaf = makeUid("leaf");
-  const uidClip = makeUid("clip");
+  // ---------- helpers ----------
+  const uid = (p="uid") => ((n=0)=>()=>`${p}-${++n}`)();
+  const uidRect = uid("rect");
+  const uidClip = uid("clip");
 
-  //  config
   const CONFIG = {
-    container: "#vis2",
-    csvPath: "data/processed/temp_dataset.csv",
-    topN: 10,                // show top N genres per year
-    width: 900,
-    height: 600,
-    fontFamily: "Inter, system-ui, Roboto, sans-serif",
-    areaMetric: "totalPopularity" // "totalPopularity" or "count"
-  };
+  container: "#vis2",
+  csvPath: "data/processed/temp_dataset.csv",
+  width: 980,
+  height: 620,
+  font: "Inter, system-ui, Roboto, sans-serif",
+  topNGenres: 12,         // show top N per year (by count)
+  maxTracksShown: 400,    // safety cap when drilling (keeps DOM light)
+  bg: "#0d0d0d",
+  card: "#111214",
+  stroke: "rgba(255,255,255,0.08)",
+  text: "#e5e5e5"
+};
 
-  // data helpers
+  // -------- data shaping: Year -> Genre -> Tracks --------
+  function indexData(rows) {
+  const byYear = new Map();
+  const allGenres = new Set();
 
-  // turn raw csv rows into Map(year -> Map(genre -> stats))
-  function aggregateByYearAndGenre(rows) {
-    const byYear = new Map();
+  for (const r of rows) {
+  const y = new Date(r.date).getFullYear();
+  if (!y || Number.isNaN(y)) continue;
 
-    for (const row of rows) {
-      const rawDate = row.date;
-      const yr = new Date(rawDate).getFullYear();
-      if (isNaN(yr)) continue;
+  const g = (r.track_genre && r.track_genre.trim()) ? r.track_genre.trim() : "Unknown";
+  allGenres.add(g);
 
-      const genre = row.track_genre && row.track_genre.trim() !== ""
-        ? row.track_genre.trim()
-        : "Unknown";
+  let yMap = byYear.get(y);
+  if (!yMap) { yMap = new Map(); byYear.set(y, yMap); }
 
-      // spotify popularity is usually 0-100 int
-      const pop = row.popularity != null && row.popularity !== ""
-        ? +row.popularity
-        : 0;
+  let gArr = yMap.get(g);
+  if (!gArr) { gArr = []; yMap.set(g, gArr); }
 
-      if (!byYear.has(yr)) {
-        byYear.set(yr, new Map());
+  // keep a light track object
+  gArr.push({
+    id: r.track_id || `${r.track_name}-${Math.random().toString(36).slice(2,8)}`,
+  name: r.track_name || "Untitled",
+  artists: r.artists || "",
+  // you can show more in tooltip if you like
+  duration_ms: r.duration_ms,
+  popularity: +r.popularity || 0
+});
+}
+
+  // convert each year map to sorted arrays by count
+  const years = Array.from(byYear.keys()).sort((a,b)=>a-b);
+  const shaped = new Map();
+  for (const y of years) {
+  const list = Array.from(byYear.get(y), ([genre, tracks]) => ({
+  genre,
+  count: tracks.length,
+  tracks
+})).sort((a,b)=>b.count - a.count);
+  shaped.set(y, { year:y, genres:list, allGenres: new Set(list.map(d=>d.genre)) });
+}
+  return { shaped, years, allGenres: Array.from(allGenres).sort(d3.ascending) };
+}
+
+  // build a hierarchy object usable by d3.hierarchy
+  // Year root -> top N genre nodes -> each track leaf (value=1)
+  function buildHierarchyForYear(yearEntry, topN, maxTracks) {
+  const { year, genres } = yearEntry;
+  const top = genres.slice(0, topN);
+  const root = {
+  name: String(year),
+  children: top.map(g => ({
+  name: g.genre,
+  count: g.count,
+  children: g.tracks.slice(0, maxTracks).map(t => ({
+  name: t.name,
+  value: 1,              // <- uniform area
+  ...t
+}))
+}))
+};
+  return root;
+}
+
+    function Treemap(rootData, cfg, mount) {
+      const W = cfg.width, H = cfg.height;
+      const HEADER_H = 56; // reserved band inside SVG for breadcrumb
+
+      // ----- layout (year → genres → tracks) -----
+      const root = d3.treemap()
+          .tile(d3.treemapSquarify.ratio(1.4))
+          .size([W, H])
+          .paddingOuter(18)
+          .paddingInner(10)
+          .round(true)(
+              d3.hierarchy(rootData)
+                  .sum(d => d.value ?? 0) // leaves have value=1; parents sum
+                  .sort((a, b) => (b.height - a.height) || (b.value - a.value))
+          );
+
+      // consistent colors per genre
+      const genreList = root.children?.map(d => d.data.name) || [];
+      const color = d3.scaleOrdinal()
+          .domain(genreList)
+          .range(d3.schemeTableau10.concat(d3.schemeSet3));
+
+      // zoom scales
+      const x = d3.scaleLinear().range([0, W]);
+      const y = d3.scaleLinear().range([0, H]);
+
+      // ----- mount -----
+      mount.selectAll("*").remove();
+      mount
+          .style("position", "relative")
+          .style("width", "100%")
+          .style("max-width", "100%")
+          .style("font-family", cfg.font)
+          .style("color", cfg.text || "#e5e5e5");
+
+      // scroll wrapper INSIDE the card; the svg can be taller than this window
+      const scroller = mount.append("div")
+          .attr("class", "vis2-scroll")
+          .style("max-height", "68vh")
+          .style("overflow-y", "auto")
+          .style("overflow-x", "hidden")
+          .style("padding", "16px")
+          .style("border-radius", "16px");
+
+      // svg lives inside the scroller
+      const svg = scroller.append("svg")
+          .attr("viewBox", [0, 0, W, H + HEADER_H])
+          .attr("width", "100%")
+          .attr("height", H + HEADER_H) // explicit height so layout reserves space
+          .style("display", "block")
+          .style("background", cfg.card || "#111214")
+          .style("border", "1px solid #212329")
+          .style("border-radius", "14px")
+          .style("box-shadow", "0 18px 48px rgba(0,0,0,0.5)");
+
+      // TIP attached to <body> so it won't be clipped by the scroller
+      d3.select("#vis2-tip").remove(); // remove any old tip to avoid duplicates
+      const tip = d3.select(document.body).append("div")
+          .attr("id", "vis2-tip")
+          .style("position", "fixed")
+          .style("pointer-events", "none")
+          .style("background", "rgba(0,0,0,0.9)")
+          .style("color", "#fff")
+          .style("padding", "8px 10px")
+          .style("border-radius", "8px")
+          .style("opacity", 0)
+          .style("font-size", "12px")
+          .style("box-shadow", "0 10px 28px rgba(0,0,0,0.35)")
+          .style("z-index", 9999);
+
+      // sticky header inside SVG (breadcrumb + right meta)
+      const header = svg.append("g")
+          .attr("transform", `translate(14, ${HEADER_H - 18})`);
+
+      const crumb = header.append("text")
+          .attr("font-size", 18)
+          .attr("font-weight", 700);
+
+      const countText = header.append("text")
+          .attr("x", W - 28)
+          .attr("text-anchor", "end")
+          .attr("font-size", 13)
+          .attr("fill", "rgba(229,229,229,0.75)");
+
+      // chart area pushed down by HEADER_H
+      const g = svg.append("g").attr("transform", `translate(0, ${HEADER_H})`);
+
+      x.domain([0, W]); y.domain([0, H]);
+      let group = g.append("g").call(render, root);
+
+      // ---------- render ----------
+      function render(sel, current) {
+        updateHeader(current);
+
+        const nodes = sel.selectAll("g.node")
+            .data(current.children ? current.children.concat(current) : [current], d => d.data.name)
+            .join("g")
+            .attr("class", "node")
+            .style("cursor", d => (d === current ? (d.parent ? "pointer" : "default") : (d.children ? "pointer" : "default")))
+            .on("click", (ev, d) => {
+              if (d === current) { if (d.parent) zoomOut(d); }
+              else if (d.children) { zoomIn(d); }
+            });
+
+        nodes.append("rect")
+            .attr("id", d => d.rectId = uidRect())
+            .attr("rx", 10).attr("ry", 10)
+            .attr("fill", d =>
+                d === current ? "transparent"
+                    : d.children ? "rgba(255,255,255,0.04)"
+                        : color(current.height === 1 ? d.parent.data.name : d.data.name)
+            )
+            .attr("stroke", cfg.stroke || "rgba(255,255,255,0.08)")
+            .attr("stroke-width", 1);
+
+        nodes.append("clipPath")
+            .attr("id", d => d.clipId = uidClip())
+            .append("use").attr("xlink:href", d => `#${d.rectId}`);
+
+        const label = nodes.append("text")
+            .attr("clip-path", d => `url(#${d.clipId})`)
+            .style("pointer-events", "none");
+
+        label.selectAll("tspan")
+            .data(d => {
+              if (d === current) return [breadcrumb(d)];
+              if (d.children) return [d.data.name, `${d.children.length} tracks`];
+              return [truncate(d.data.name, 26)];
+            })
+            .join("tspan")
+            .attr("x", 10)
+            .attr("y", (s, i) => i === 0 ? 18 : 32)
+            .attr("font-size", (s, i) => i === 0 ? 13 : 11)
+            .attr("fill", (s, i) => i ? "rgba(229,229,229,0.7)" : "#eaeaec")
+            .attr("font-weight", (s, i) => i ? 400 : 700)
+            .text(s => s);
+
+        // hover (using viewport coords for the body-level tooltip)
+        nodes
+            .on("mouseenter", (ev, d) => {
+              if (d === current) return;
+              tip.style("opacity", 1).html(tooltipHTML(d));
+            })
+            .on("mousemove", (ev) => {
+              tip.style("left", (ev.clientX + 14) + "px")
+                  .style("top",  (ev.clientY + 12) + "px");
+            })
+            .on("mouseleave", () => tip.style("opacity", 0));
+
+        sel.call(position, current);
       }
-      const gmap = byYear.get(yr);
 
-      if (!gmap.has(genre)) {
-        gmap.set(genre, { genre, count: 0, totalPopularity: 0 });
+      // position + size (and hide labels on tiny tiles)
+      function position(sel, current) {
+        sel.selectAll("g.node")
+            .attr("transform", d => d === current
+                ? `translate(0, -${HEADER_H})`
+                : `translate(${x(d.x0)}, ${y(d.y0)})`)
+            .each(function (d) {
+              const w = d === current ? W : x(d.x1) - x(d.x0);
+              const h = d === current ? HEADER_H : y(d.y1) - y(d.y0);
+              d3.select(this).select("rect").attr("width", w).attr("height", h);
+              const show = w >= 110 && h >= 56;
+              d3.select(this).select("text").style("display", show ? null : "none");
+            });
       }
-      const rec = gmap.get(genre);
-      rec.count += 1;
-      rec.totalPopularity += pop;
-    }
 
-    return byYear;
-  }
+      function zoomIn(d) {
+        const from = group.attr("pointer-events", "none");
+        const to = (group = g.append("g").call(render, d));
+        x.domain([d.x0, d.x1]);
+        y.domain([d.y0, d.y1]);
 
-  // build hierarchy object for treemap like:
-  // { name: "2024", children: [{name:"pop", value:123, count:20, totalPopularity:400}, ...] }
-  function buildYearHierarchy(year, gmap, topN, metric) {
-    // flatten genre map to array
-    let genres = Array.from(gmap.values());
-
-    // choose what drives rectangle size
-    genres.forEach(g => {
-      g.value = (metric === "count") ? g.count : g.totalPopularity;
-    });
-
-    // sort by size descending, keep best topN
-    genres.sort((a, b) => b.value - a.value);
-    genres = genres.slice(0, topN);
-
-    return {
-      name: String(year),
-      children: genres.map(g => ({
-        name: g.genre,
-        value: g.value,
-        count: g.count,
-        totalPopularity: g.totalPopularity
-      }))
-    };
-  }
-
-  // treemap rendering
-
-  function createTreemapComponents(rootData, opts, outerSel) {
-    const { width, height, fontFamily } = opts;
-
-    // custom tiler that rescales to the zoom window just like Observable’s example
-    function tile(node, x0, y0, x1, y1) {
-      d3.treemapBinary(node, 0, 0, width, height);
-      if (!node.children) return;
-      for (const child of node.children) {
-        child.x0 = x0 + (child.x0 / width) * (x1 - x0);
-        child.x1 = x0 + (child.x1 / width) * (x1 - x0);
-        child.y0 = y0 + (child.y0 / height) * (y1 - y0);
-        child.y1 = y0 + (child.y1 / height) * (y1 - y0);
+        g.transition().duration(800).ease(d3.easeCubicOut)
+            .call(t => from.transition(t).remove().call(position, d.parent))
+            .call(t => to.transition(t).call(position, d));
       }
-    }
 
-    // build hierarchy + layout
-    const hierarchy = d3.hierarchy(rootData)
-      .sum(d => d.value)
-      .sort((a, b) => b.value - a.value);
+      function zoomOut(d) {
+        const from = group.attr("pointer-events", "none");
+        const to = (group = g.insert("g", "*").call(render, d.parent));
+        x.domain([d.parent.x0, d.parent.x1]);
+        y.domain([d.parent.y0, d.parent.y1]);
 
-    const treemapLayout = d3.treemap().tile(tile);
-    const root = treemapLayout(hierarchy);
-
-    // scales for zoom
-    const x = d3.scaleLinear().rangeRound([0, width]);
-    const y = d3.scaleLinear().rangeRound([0, height]);
-
-    // number formatter
-    const fmt = d3.format(",d");
-
-    // helper to show full path at top bar
-    const fullName = d =>
-      d.ancestors().reverse().map(d => d.data.name).join(" / ");
-
-    // wipe mount point
-    outerSel.selectAll("*").remove();
-
-    // tooltip container in same DOM flow (absolute positioned)
-    outerSel
-      .style("position", "relative")
-      .style("font-family", fontFamily)
-      .style("width", width + "px")
-      .style("max-width", "100%");
-
-    const tooltip = outerSel.append("div")
-      .style("position", "absolute")
-      .style("pointer-events", "none")
-      .style("background", "rgba(0,0,0,0.8)")
-      .style("color", "#fff")
-      .style("padding", "6px 8px")
-      .style("border-radius", "6px")
-      .style("box-shadow", "0 2px 8px rgba(0,0,0,0.4)")
-      .style("font-size", "12px")
-      .style("line-height", "1.4")
-      .style("opacity", 0);
-
-    const svg = outerSel.append("svg")
-      .attr("viewBox", [0.5, -30.5, width, height + 30])
-      .attr("width", "100%")
-      .attr("height", height + 30)
-      .style("display", "block")
-      .style("height", "auto")
-      .style("font-size", "11px")
-      .style("cursor", "default");
-
-    // define col scale before calling render()
-    const colorForName = d3.scaleOrdinal(d3.schemeTableau10);
-
-    // we reuse this <g> when zooming
-    let group = svg.append("g")
-      .call(render, root);
-
-    function render(gSel, currentRoot) {
-      const nodes = gSel.selectAll("g")
-        .data(
-          currentRoot.children
-            ? currentRoot.children.concat(currentRoot)
-            : [currentRoot],
-          d => d.data.name
-        )
-        .join("g");
-
-      // nodes that can zoom
-      nodes
-        .filter(d => (d === currentRoot ? d.parent : d.children))
-        .attr("cursor", "pointer")
-        .on("click", (event, d) => {
-          if (d === currentRoot) {
-            if (d.parent) zoomOut(d);
-          } else {
-            if (d.children) zoomIn(d);
-          }
-        });
-
-      // hover tooltip only for leaves (actual genres)
-      nodes
-        .on("mouseenter", function (event, d) {
-          if (!d.children) {
-            tooltip
-              .style("opacity", 1)
-              .html(makeTooltipHTML(d));
-          }
-        })
-        .on("mousemove", function (event) {
-          const [mx, my] = d3.pointer(event, outerSel.node());
-          tooltip
-            .style("left", mx + 12 + "px")
-            .style("top", my + 12 + "px");
-        })
-        .on("mouseleave", function () {
-          tooltip.style("opacity", 0);
-        });
-
-      // draw rect
-      nodes.append("rect")
-        .attr("id", d => {
-          d.leafUid = uidLeaf();
-          return d.leafUid;
-        })
-        .attr("fill", d => {
-          if (d === currentRoot) return "#ffffff";
-          if (d.children) return "#d4d4d8"; // parent groups
-          return colorForName(d.data.name); // leaf genre
-        })
-        .attr("stroke", "#ffffff");
-
-      // clipPath keeps text inside the box
-      nodes.append("clipPath")
-        .attr("id", d => {
-          d.clipUid = uidClip();
-          return d.clipUid;
-        })
-        .append("use")
-        .attr("xlink:href", d => `#${d.leafUid}`);
-
-      // label text (genre + score)
-      const text = nodes.append("text")
-        .attr("clip-path", d => `url(#${d.clipUid})`)
-        .attr("font-weight", d => (d === currentRoot ? "600" : null))
-        .style("pointer-events", "none")
-        .style("user-select", "none");
-
-      text.selectAll("tspan")
-        .data(d => {
-          // top bar = full path + value
-          if (d === currentRoot) {
-            return [fullName(d), fmt(d.value)];
-          }
-          // leaf / normal rect
-          return [d.data.name, fmt(d.value)];
-        })
-        .join("tspan")
-        .attr("x", 3)
-        .attr("y", (d, i, nodesArr) =>
-          `${(i === nodesArr.length - 1) * 0.3 + 1.1 + i * 0.9}em`
-        )
-        .attr("fill-opacity", (d, i, nodesArr) =>
-          i === nodesArr.length - 1 ? 0.7 : null
-        )
-        .attr("font-weight", (d, i, nodesArr) =>
-          i === nodesArr.length - 1 ? 400 : null
-        )
-        .text(d => d);
-
-      // apply positioning
-      gSel.call(position, currentRoot);
-    }
-
-    function makeTooltipHTML(d) {
-      const genreName = d.data.name;
-      const score = fmt(d.data.value);
-      const totalPop = d.data.totalPopularity != null
-        ? d.data.totalPopularity.toFixed(0)
-        : "–";
-      const count = d.data.count != null ? d.data.count : "–";
-
-      return `
-        <div style="font-weight:600;margin-bottom:4px">${genreName}</div>
-        <div>Score: <b>${score}</b></div>
-        <div>Total popularity: <b>${totalPop}</b></div>
-        <div>Tracks in ${rootData.name}: <b>${count}</b></div>
-      `;
-    }
-
-    function position(gSel, currentRoot) {
-      gSel.selectAll("g")
-        .attr("transform", d => {
-          return d === currentRoot
-            ? `translate(0,-30)`
-            : `translate(${x(d.x0)},${y(d.y0)})`;
-        })
-        .select("rect")
-        .attr("width", d =>
-          d === currentRoot ? width : x(d.x1) - x(d.x0)
-        )
-        .attr("height", d =>
-          d === currentRoot ? 30 : y(d.y1) - y(d.y0)
-        );
-    }
-
-    // zoom in on a child node
-    function zoomIn(d) {
-      const group0 = group.attr("pointer-events", "none");
-      const group1 = (group = svg.append("g").call(render, d));
-
-      x.domain([d.x0, d.x1]);
-      y.domain([d.y0, d.y1]);
-
-      svg.transition()
-        .duration(750)
-        .call(t => group0.transition(t)
-          .remove()
-          .call(position, d.parent)
-        )
-        .call(t => group1.transition(t)
-          .attrTween("opacity", () => d3.interpolate(0, 1))
-          .call(position, d)
-        );
-    }
-
-    // zoom back out to parent
-    function zoomOut(d) {
-      const group0 = group.attr("pointer-events", "none");
-      const group1 = (group = svg.insert("g", "*").call(render, d.parent));
-
-      x.domain([d.parent.x0, d.parent.x1]);
-      y.domain([d.parent.y0, d.parent.y1]);
-
-      svg.transition()
-        .duration(750)
-        .call(t => group0.transition(t)
-          .remove()
-          .attrTween("opacity", () => d3.interpolate(1, 0))
-          .call(position, d)
-        )
-        .call(t => group1.transition(t)
-          .call(position, d.parent)
-        );
-    }
-
-    // return tiny handle in case we ever want to destroy it
-    return {
-      destroy() {
-        outerSel.selectAll("*").remove();
+        g.transition().duration(800).ease(d3.easeCubicOut)
+            .call(t => from.transition(t).remove().call(position, d))
+            .call(t => to.transition(t).call(position, d.parent));
       }
-    };
-  }
 
-  // main init (called once after CSV load)
+      // helpers
+      function breadcrumb(d) {
+        return d.ancestors().reverse().map(n => n.data.name).join(" / ");
+      }
 
-  function initVis2(rows, config = CONFIG) {
-    const containerSel = d3.select(config.container);
+      function updateHeader(d) {
+        crumb.text(breadcrumb(d));
+        const meta = d.depth === 0
+            ? `${d.children ? d.children.length : 0} genres`
+            : d.depth === 1
+                ? `${d.children ? d.children.length : 0} tracks`
+                : ``;
+        countText.text(meta);
+      }
 
-    // clear existing content (if dev hot-reload etc.)
-    containerSel.selectAll("*").remove();
-
-    // outer wrapper for title + dropdown + chart card
-    const wrapper = containerSel
-      .style("font-family", config.fontFamily)
-      .style("color", "#e5e5e5")
-      .style("display", "flex")
-      .style("flex-direction", "column")
-      .style("gap", "0.75rem");
-
-    // header row
-    const header = wrapper.append("div")
-      .style("display", "flex")
-      .style("flex-wrap", "wrap")
-      .style("align-items", "baseline")
-      .style("column-gap", "0.5rem")
-      .style("row-gap", "0.5rem")
-      .style("color", "#e5e5e5");
-
-    header.append("div")
-      .style("font-size", "1rem")
-      .style("font-weight", "600")
-      .text("How Genres Defined");
-
-    const yearSelect = header.append("select")
-      .style("background", "#1f1f1f")
-      .style("color", "#e5e5e5")
-      .style("border", "1px solid #555")
-      .style("border-radius", "4px")
-      .style("padding", "2px 6px")
-      .style("font-size", "0.9rem")
-      .style("cursor", "pointer");
-
-    header.append("div")
-      .style("font-size", "1rem")
-      .style("font-weight", "600")
-      .text("’s Music Scene");
-
-    // card-ish container for the treemap svg
-    const card = wrapper.append("div")
-      .style("background", "#0d0d0d")
-      .style("border", "1px solid #2a2a2a")
-      .style("border-radius", "12px")
-      .style("padding", "12px")
-      .style("width", "100%")
-      .style("max-width", config.width + "px")
-      .style("overflow", "hidden")
-      .style("box-shadow", "0 16px 40px rgba(0,0,0,0.6)");
-
-    // aggregate
-    const byYear = aggregateByYearAndGenre(rows);
-    const years = Array.from(byYear.keys()).sort((a, b) => a - b);
-
-    // populate year dropdown
-    yearSelect
-      .selectAll("option")
-      .data(years)
-      .join("option")
-      .attr("value", d => d)
-      .text(d => d);
-
-    let currentViz = null;
-
-    function renderForYear(yearVal) {
-      const gmap = byYear.get(yearVal);
-      if (!gmap) return;
-
-      const hierarchy = buildYearHierarchy(
-        yearVal,
-        gmap,
-        config.topN,
-        config.areaMetric // "totalPopularity" or "count"
-      );
-
-      // reset card (so we don't stack multiple svgs)
-      card.selectAll("*").remove();
-
-      currentViz = createTreemapComponents(
-        hierarchy,
-        { width: config.width, height: config.height, fontFamily: config.fontFamily },
-        card.append("div")
-      );
-    }
-
-    // initial render = most recent year
-    const initialYear = years[years.length - 1];
-    yearSelect.property("value", initialYear);
-    renderForYear(initialYear);
-
-    // when user changes dropdown year
-    yearSelect.on("change", (ev) => {
-      const yr = +ev.target.value;
-      renderForYear(yr);
-    });
-
-    // store an update hook on the DOM if you ever reload data
-    containerSel.node().__vis2__ = {
-      update(newRows) {
-        const newByYear = aggregateByYearAndGenre(newRows);
-        byYear.clear();
-        for (const [k, v] of newByYear.entries()) {
-          byYear.set(k, v);
+      function tooltipHTML(d) {
+        if (d.children) {
+          return `<div style="font-weight:700;margin-bottom:4px">${d.data.name}</div>
+              <div>${d.children.length} tracks in ${rootData.name}</div>`;
         }
+        return `<div style="font-weight:700;margin-bottom:4px">${d.data.name}</div>
+            <div>${d.parent.data.name} • ${rootData.name}</div>
+            <div>Artist(s): ${d.data.artists || "—"}</div>
+            <div>Popularity: ${d.data.popularity ?? "—"}</div>`;
+      }
 
-        const newYears = Array.from(byYear.keys()).sort((a, b) => a - b);
+      function truncate(s, n) {
+        return s && s.length > n ? s.slice(0, n - 1) + "…" : s;
+      }
+    }
 
-        // repopulate dropdown
-        const optSel = yearSelect.selectAll("option")
-          .data(newYears, d => d);
 
-        optSel.enter()
-          .append("option")
+
+
+    // ---------- init with dropdown ----------
+    function init(rows, CFG = CONFIG) {
+      const { shaped, years } = indexData(rows);
+      const container = d3.select(CFG.container);
+      container.selectAll("*").remove();
+
+      const wrap = container
+          .style("font-family", CFG.font)
+          .style("color", "#e5e5e5")
+          .style("display","flex")
+          .style("flex-direction","column")
+          .style("gap","10px");
+
+      // --- mount the title + select in the HTML H2 ---
+      const titleEl = container.node()
+          .closest('.chart-container')
+          .querySelector('.chart-title');
+
+      const title = d3.select(titleEl);
+      title.html("");  // clear the original text
+
+      title.append("span")
+          .attr("class", "vis2-title-text")
+          .text("How Genres Defined ");
+
+      const sel = title.append("select")
+          .attr("class", "vis2-year-select");
+
+      title.append("span")
+          .attr("class", "vis2-title-suffix")
+          .text(" ’s Music Scene");
+
+      // populate year options
+      sel.selectAll("option")
+          .data(years)
+          .join("option")
           .attr("value", d => d)
           .text(d => d);
 
-        optSel.exit().remove();
+      // --- chart card below the title ---
+      const card = wrap.append("div").attr("class","vis2-card");
 
-        const latest = newYears[newYears.length - 1];
-        yearSelect.property("value", latest);
-        renderForYear(latest);
+      const measure = () => {
+        const w = Math.floor(card.node().getBoundingClientRect().width);
+        const h = Math.max(560, Math.round(w * 0.62));
+        return { w, h };
+      };
+
+      let size = measure();
+
+      function render(year) {
+        const hier = buildHierarchyForYear(shaped.get(year), CFG.topNGenres, CFG.maxTracksShown);
+        card.selectAll("*").remove();
+        Treemap(hier, { width: size.w, height: size.h, font: CFG.font, card: "#111214", stroke: "rgba(255,255,255,0.08)" }, card.append("div"));
       }
-    };
-  }
 
-  // load CSV + kick off
+      const initial = years[years.length - 1];
+      sel.property("value", initial);
+      render(initial);
 
-  d3.csv(CONFIG.csvPath).then(rawRows => {
-    initVis2(rawRows, CONFIG);
-  }).catch(err => {
-    console.error("Failed to build vis2:", err);
-    const el = document.querySelector(CONFIG.container);
-    if (el) {
-      el.innerHTML = `<div style="color:#ff6b6b;font-family:${CONFIG.fontFamily};">
-        Error building Visualization 2. Check console.
-      </div>`;
+      sel.on("change", e => render(+e.target.value));
+
+      // responsive re-measure
+      let rid;
+      window.addEventListener("resize", () => {
+        clearTimeout(rid);
+        rid = setTimeout(() => {
+          const next = measure();
+          if (next.w !== size.w || next.h !== size.h) {
+            size = next;
+            render(+sel.property("value"));
+          }
+        }, 120);
+      });
     }
-  });
+
+
+
+    d3.csv(CONFIG.csvPath, d3.autoType)
+  .then(rows => init(rows))
+  .catch(err => {
+  console.error(err);
+  const el = document.querySelector(CONFIG.container);
+  if (el) el.innerHTML = `<div style="color:#ff7676">Failed to load CSV.</div>`;
+});
 
 })();
+
