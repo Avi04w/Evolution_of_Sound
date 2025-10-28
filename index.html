@@ -11,6 +11,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/bubble.css" />
+    <link rel="stylesheet" href="css/record_player.css" />
 
     <!-- GOOGLE FONTS -->
     <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,500,400italic,300italic' rel='stylesheet' type='text/css'>
@@ -36,6 +37,19 @@
     <div id="bubble-tooltip" class="bubble-tooltip"></div>
 </div>
 
+<div id="record-player-container">
+    <div id="record-player-shell-out">
+        <div id="record-player-shell-mid">
+            <div id="record-player-shell-in">
+                <div id="record-player-image-container">
+                    <img id="record-player-image" style="display: none;" src="" class="unselectable">
+                    <div id="record-player-pause" class="unselectable"><span></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="record-player-arm"></div>
+</div>
 <audio id="player"></audio>
 
 <main class="container">
@@ -103,8 +117,7 @@
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="js/vis_dna.js"></script>
 <script src="js/vis2.js"></script>
-
-
+<script src="js/vinyl_record.js"></script>
 <script src="js/vis_bubble.js"></script>
 </body>
 </html>

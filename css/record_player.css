@@ -1,0 +1,116 @@
+#record-player-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 150px;
+  height: 150px;
+  cursor: pointer;
+}
+
+#record-player-shell-out,
+#record-player-shell-mid,
+#record-player-shell-in {
+  background-color: black;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#record-player-shell-out {
+  width: 100%;
+  height: 100%;
+  border: solid rgba(255, 255, 255, 0.7) 2px;
+}
+
+#record-player-shell-mid,
+#record-player-shell-in {
+  border: solid rgba(211, 211, 211, 0.4) 2px;
+  border-left: 0px;
+  border-right: none;
+  width: 80%;
+  aspect-ratio: 1 / 1;
+}
+
+#record-player-shell-mid {
+  transform: rotate(20deg);
+}
+
+#record-player-shell-in {
+  transform: rotate(120deg);
+}
+
+#record-player-image-container {
+  position: relative;
+  width: 60%;
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(rgb(198, 18, 18), rgb(126, 5, 5));
+  border-radius: 50%;
+  transform: rotate(-140deg);
+}
+
+#record-player-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+#record-player-pause {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  text-align: center;
+  opacity: 0;
+}
+
+#record-player-pause span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(56deg);
+}
+
+.rotate-infinite {
+  animation: spin 6s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+#record-player-arm {
+  position: absolute;
+  top: -70%;
+  right: -85px;
+  width: 250px;
+  height: 10px;
+  background: linear-gradient(to right, #555555, #222222);
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  border-left: 6px solid rgb(232, 194, 96);
+  transform-origin: right center;
+  transform: rotate(-70deg);
+  border-radius: 3px;
+}
+
+.arm-animate-in {
+  animation: armMoveIn 0.3s ease-in-out forwards;
+}
+
+.arm-animate-out {
+  animation: armMoveOut 0.3s ease-in-out forwards;
+}
+
+@keyframes armMoveIn {
+  from { transform: rotate(-70deg); }
+  to { transform: rotate(-60deg); }
+}
+
+@keyframes armMoveOut {
+  from { transform: rotate(-60deg); }
+  to { transform: rotate(-70deg); }
+}

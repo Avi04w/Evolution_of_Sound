@@ -1,12 +1,12 @@
 class BubblePlayerViz {
-  constructor({ selector, data, centerSelector, songsPath = "./songs/" }) {
+  constructor({ selector, data, centerSelector, recordPlayer, songsPath = "./songs/" }) {
     this.svg = d3.select(selector);
     this.centerEl = document.querySelector(centerSelector);
     this.data = data;
     this.songsPath = songsPath;
-    this.audioEl = document.getElementById("player");
     this.activeBubble = null;
     this.currentSongId = null;
+    this.recordPlayer = recordPlayer;
 
     this.init();
     this.render();
@@ -139,7 +139,7 @@ class BubblePlayerViz {
   moveTooltip(event) {
     const [x, y] = d3.pointer(event, document.body);
     this.tooltip
-      .style("left", `${x + 30}px`)
+      .style("left", `${x + 40}px`)
       .style("top", `${y}px`);
   }
 
@@ -151,21 +151,24 @@ class BubblePlayerViz {
     }, 50);
   }
 
-  handleBubbleClick(event, d) {
+  async handleBubbleClick(event, d) {
     const songUrl = `${this.songsPath}${d.Year}.mp3`;
 
     if (this.activeBubble) {
       this.activeBubble.attr("stroke", null).attr("stroke-width", null).attr("opacity", 0.7);
     }
 
-    if (d.Year === this.currentSongId && !this.audioEl.paused) {
-      this.audioEl.pause();
+    if (d.Year === this.currentSongId && !this.recordPlayer.isPaused()) {
       this.updateLabels(d.Year, false);
-      return
+      this.recordPlayer.pause();
+      return;
     }
 
-    this.audioEl.src = songUrl;
-    this.audioEl.play().catch(err => console.error("Audio error:", err));
+    if (d.Year !== this.currentSongId) {
+      await this.recordPlayer.load(songUrl, d["Image URL"]);
+    }
+    
+    this.recordPlayer.play();
 
     this.currentSongId = d.Year;
 
@@ -189,10 +192,13 @@ class BubblePlayerViz {
 
 document.addEventListener("DOMContentLoaded", () => {
   d3.csv("data/processed/top_hot_100_per_year.csv").then((data) => {
+    const recordPlayer = new VinylRecord();
+
     new BubblePlayerViz({
       selector: "#bubble-viz",
       centerSelector: "#bubble-viz-container",
-      data: data.toSorted((a, b) => b["Weeks in Charts"] - a["Weeks in Charts"])
+      data: data.toSorted((a, b) => b["Weeks in Charts"] - a["Weeks in Charts"]),
+      recordPlayer: recordPlayer,
     });
-  })
+  });
 })
