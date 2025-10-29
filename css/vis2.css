@@ -10,7 +10,7 @@
 .chart-container:has(#vis2) .chart-title {
     position: relative;
     z-index: 3;                         /* above the card/SVG */
-    color: #fff;
+    /*color: #fff;*/
     font-weight: 800;
     font-size: clamp(2.0rem, 3vw, 2.6rem);
     line-height: 1.1;

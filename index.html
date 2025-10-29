@@ -1,43 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
     <title>The Evolution of Sound</title>
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/bubble.css" />
-    <link rel="stylesheet" href="css/record_player.css" />
-    <link rel="stylesheet" href="css/vis2.css" />
-
-    <!-- GOOGLE FONTS -->
-    <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,500,400italic,300italic' rel='stylesheet' type='text/css'>
-    <link href='https://fonts.googleapis.com/css?family=Satisfy' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/bubble.css">
+    <link rel="stylesheet" href="css/record_player.css">
+    <link rel="stylesheet" href="css/vis2.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 </head>
-
 <body>
-
-<header id="hook" class="text-center py-5">
-    <h1 class="display-5 fw-bold text-light">The Evolution of Sound</h1>
-    <p class="lead text-secondary">Visualizing 30 Years of Pop Culture Through Data</p>
+<header>
+    <h1>The Evolution of Sound</h1>
+    <h2>Visualizing 30 Years of Pop Culture Through Data</h2>
 </header>
 
-<section class="container text-center mb-5">
-    <p class="main-message">
-        Popular music has evolved from high-energy, upbeat sounds to more mellow and introspective tones,
-        while becoming increasingly global as regional genres reshape the mainstream.
-    </p>
-</section>
-
+<!-- 🌐 Bubble Universe Visualization -->
 <div id="bubble-viz-container">
     <svg id="bubble-viz"></svg>
     <div id="bubble-tooltip" class="bubble-tooltip"></div>
 </div>
 
+<!-- 🎵 Vinyl Record Player Visualization -->
 <div id="record-player-container">
     <div id="record-player-shell-out">
         <div id="record-player-shell-mid">
@@ -53,73 +37,67 @@
 </div>
 <audio id="player"></audio>
 
-<main class="container">
-    <div class="row mb-5">
-        <div class="col-md-12 chart-container">
-            <h2 class="chart-title">A Universe of Hits</h2>
-            <p class="chart-description">Explore the landscape of our data–see how different audio features cluster together and relate to one another.</p>
-            <div id="vis-universe" class="chart-space"></div>
+<main>
+    <!-- 🧬 DNA Helix Visualization Section -->
+    <section class="vis-section" id="dna-section">
+        <div class="text-block">
+            <h3>The DNA of Music</h3>
+            <p>
+                Music, like DNA, evolves through subtle changes in rhythm, tone,
+                and structure. This helix represents the ever-changing
+                genetic code of sound across decades.
+            </p>
         </div>
-    </div>
+        <div id="vis-dna" class="chart-space"></div>
+    </section>
 
-    <div class="row mb-5">
-        <div class="col-md-12 chart-container">
-            <h2 class="chart-title">The DNA of Music</h2>
-            <p class="chart-description">See how the sounds of each year has evolved over time.</p>
-            <div id="vis-dna" class="chart-space"></div>
+    <!-- 🌍 Geographical Music Explorer -->
+    <section class="vis-section" id="geo-section">
+        <div class="text-block">
+            <h3>Global Soundscape</h3>
+            <p>
+                Explore how music has transcended borders and genres to connect
+                people around the world. This visualization highlights the
+                global spread of popular songs and how musical tastes evolved
+                geographically through the years.
+            </p>
         </div>
-    </div>
 
-    <div class="row mb-5">
-        <div class="col-md-12 chart-container">
-            <h2 class="chart-title">Global Sounds</h2>
-            <p class="chart-description">With the accessibility of music production tools and platforms, artists from diverse backgrounds can share their sounds with the world. This has led to music becoming a melting pot of influences, blending genres and cultures.</p>
-            <div id="vis-global" class="chart-space">
-                <iframe
+        <div id="vis-global" class="chart-space">
+            <iframe
                     src="geographical.html"
                     title="Geographical Music Explorer"
                     loading="lazy"
                     class="geographical-embed"
                     allowfullscreen
-                ></iframe>
-            </div>
+            ></iframe>
         </div>
-    </div>
-    <div class="row mb-5">
-        <div class="col-md-12 chart-container">
-            <h2 class="chart-title">Popular Genre By Year Treemap</h2>
+    </section>
+
+    <!-- 🎼 Genre Treemap Visualization -->
+    <section class="vis-section" id="genre-section">
+        <div class="chart-container">
+            <h2 class="chart-title">How Genres Defined Each Year’s Music Scene</h2>
+            <p class="chart-description">
+                A treemap showing how dominant music genres shaped the charts each year.
+            </p>
             <div id="vis2" class="chart-space"></div>
         </div>
-    </div>
+    </section>
 </main>
 
-
-<section class="container text-left mb-5">
-    <p class="conclusion-message">
-        Through analyzing three decades of popular music, we uncover a story of transformation—melodically, culturally, and globally. Music has shifted from [x] to [y], reflecting broader societal changes and the blending of cultures worldwide.
-        <!-- TODO need more analysis on the specific trends -->
-    </p>
-
-    <p class="conclusion-message">
-        This style of storytelling through data visualization highlights the best aspects of both art and science, providing insights into how music both shapes and is shaped by the world around us. Check out these similar visualizations for more explorations into the intersection of data and culture:
-    </p>
-
-    <ul>
-        <li><a href="https://musiclab.chromeexperiments.com/Experiments">Music Lab by Google</a></li>
-        <!-- TODO add more websites about movies, music, pop culture, etc -->
-    </ul>
-</section>
-
-<footer class="text-center py-4">
-    Created by Avi Walia, Eric Liang, Ethan Liu, Taemin Kim, and Kevin Hu · CSC316 · University of Toronto
+<footer>
+    <p>Created by ___ • Data Source: Spotify, Kaggle Global Music Charts</p>
 </footer>
 
-<!-- Visualization & vendor scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<script src="js/vis_dna.js"></script>
-<script src="js/vis2.js"></script>
+<!-- JS Scripts -->
 <script src="js/vinyl_record.js"></script>
 <script src="js/vis_bubble.js"></script>
+<script src="js/vis_dna.js"></script>
+<script src="js/vis2.js"></script>
+<script>
+    const dnaVis = new VisDNA("#vis-dna", { width: 1300, height: 360 });
+    dnaVis.start?.();
+</script>
 </body>
 </html>
