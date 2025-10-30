@@ -696,7 +696,6 @@ class MusicUniverseVisualization {
         // Custom shader material for per-vertex alpha
         const material = new THREE.ShaderMaterial({
             uniforms: {
-                pointTexture: { value: this.createCircleTexture() },
                 size: { value: 0.3 }
             },
             vertexShader: `
@@ -714,27 +713,37 @@ class MusicUniverseVisualization {
                 }
             `,
             fragmentShader: `
-                uniform sampler2D pointTexture;
                 varying vec3 vColor;
                 varying float vAlpha;
                 
                 void main() {
-                    vec4 texColor = texture2D(pointTexture, gl_PointCoord);
-                    float finalAlpha = texColor.a * vAlpha;
+                    // Create circular shape directly in shader
+                    vec2 center = gl_PointCoord - vec2(0.5);
+                    float dist = length(center);
                     
-                    // For dimmed points, use much lower alpha and scale color down
+                    // Discard fragments outside circle radius
+                    if (dist > 0.5) discard;
+                    
+                    float finalAlpha = vAlpha;
+                    
+                    // For dimmed points, use much lower alpha
                     if (vAlpha < 0.3) {
                         finalAlpha = finalAlpha * 0.15; // Very low alpha
                     }
+                    
+                    // Use alpha test to reduce blending artifacts with depthWrite
+                    // Only write depth for sufficiently opaque fragments
+                    if (finalAlpha < 0.05) discard;
                     
                     gl_FragColor = vec4(vColor, finalAlpha);
                 }
             `,
             transparent: true,
             vertexColors: true,
-            depthWrite: false,
+            depthWrite: true,
             blending: THREE.NormalBlending,
-            depthTest: true
+            depthTest: true,
+            alphaToCoverage: true
         });
         
         this.points = new THREE.Points(this.geometry, material);
@@ -743,7 +752,7 @@ class MusicUniverseVisualization {
 
     /**
      * Create high-quality circular texture for point markers
-     * Uses higher resolution and anti-aliasing for better zoom quality
+     * Creates a solid circle with sharp edges
      */
     createCircleTexture() {
         const size = 256; // Higher resolution
@@ -754,25 +763,15 @@ class MusicUniverseVisualization {
         
         const centerX = size / 2;
         const centerY = size / 2;
-        const radius = size / 2;
+        const radius = size / 2 - 3; // Slightly smaller to avoid edge artifacts
         
         // Clear canvas
         ctx.clearRect(0, 0, size, size);
         
-        // Draw solid circle with anti-aliasing
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius - 2, 0, Math.PI * 2);
-        ctx.fillStyle = 'white';
-        ctx.fill();
-        
-        // Add soft edge for anti-aliasing
-        const gradient = ctx.createRadialGradient(centerX, centerY, radius - 10, centerX, centerY, radius);
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        
+        // Draw solid circle
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = 'white';
         ctx.fill();
         
         const texture = new THREE.CanvasTexture(canvas);
@@ -1075,7 +1074,7 @@ class MusicUniverseVisualization {
                     newColors[i * 3] = 0.5;     // R
                     newColors[i * 3 + 1] = 0.5; // G
                     newColors[i * 3 + 2] = 0.5; // B
-                    newAlphas[i] = 0.4;
+                    newAlphas[i] = 0.6;
                 } else {
                     // Dimmed grey for non-matching
                     newColors[i * 3] = 0.3;
