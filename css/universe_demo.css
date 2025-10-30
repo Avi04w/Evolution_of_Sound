@@ -336,6 +336,156 @@ button.hidden {
     50% { transform: translateX(-50%) translateY(-10px); }
 }
 
+/* PCA Loading Vector Legend */
+#loading-vector-legend {
+    position: absolute;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 1000;
+    font-size: 13px;
+    font-family: Arial, sans-serif;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: top 0.5s ease-in-out, transform 0.5s ease-in-out, opacity 0.3s ease-in-out;
+    opacity: 0;
+}
+
+#loading-vector-legend .legend-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 14px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+    text-align: center;
+}
+
+#loading-vector-legend .legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+#loading-vector-legend .legend-color-box {
+    width: 16px;
+    height: 16px;
+    margin-right: 10px;
+    border: 1px solid #999;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+#loading-vector-legend .legend-label {
+    font-size: 12px;
+}
+
+/* Tooltip */
+#track-tooltip {
+    position: absolute;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 5px;
+    pointer-events: none;
+    display: none;
+    font-size: 12px;
+    z-index: 1000;
+    min-width: 220px;
+    max-width: 280px;
+}
+
+.tooltip-peak-rank {
+    margin-bottom: 8px;
+    padding: 8px;
+    background: rgba(255, 215, 0, 0.2);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 215, 0, 0.5);
+}
+
+.tooltip-peak-rank strong {
+    font-size: 12px;
+    color: #FFD700;
+}
+
+.tooltip-peak-rank span {
+    font-size: 11px;
+    color: #999;
+}
+
+.tooltip-feature {
+    margin: 6px 0;
+}
+
+.tooltip-feature-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+
+.tooltip-feature-header span:first-child {
+    font-size: 11px;
+}
+
+.tooltip-feature-header span:last-child {
+    font-size: 11px;
+    color: #aaa;
+}
+
+.tooltip-feature-bar-container {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    height: 6px;
+    width: 100%;
+}
+
+.tooltip-feature-bar {
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    border-radius: 3px;
+    height: 100%;
+}
+
+.tooltip-track-info {
+    margin-bottom: 8px;
+}
+
+.tooltip-track-info strong {
+    font-size: 13px;
+}
+
+.tooltip-track-info em {
+    font-size: 11px;
+    color: #ccc;
+}
+
+.tooltip-divider {
+    margin: 8px 0;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Genre suggestions (no matches) */
+.genre-no-matches {
+    padding: 8px;
+    color: #999;
+}
+
+/* Canvas highlight */
+canvas.canvas-highlight {
+    border: 2px solid #2196F3 !important;
+    border-radius: 4px !important;
+}
+
+/* Cursor states */
+.cursor-grab {
+    cursor: grab !important;
+}
+
+.cursor-grabbing {
+    cursor: grabbing !important;
+}
+
 /* Hide scrollbar but keep functionality */
 body::-webkit-scrollbar {
     display: none;

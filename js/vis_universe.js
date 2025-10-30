@@ -433,7 +433,8 @@ class MusicUniverseVisualization {
         
         const startDrag = (e) => {
             isDragging = true;
-            slider.style.cursor = 'grabbing';
+            slider.classList.add('cursor-grabbing');
+            slider.classList.remove('cursor-grab');
             // Pause animation if user manually interacts
             this.pauseTimeline();
             updateSliderPosition(e.clientX || e.touches[0].clientX);
@@ -447,7 +448,8 @@ class MusicUniverseVisualization {
         
         const endDrag = () => {
             isDragging = false;
-            slider.style.cursor = 'grab';
+            slider.classList.add('cursor-grab');
+            slider.classList.remove('cursor-grabbing');
         };
         
         // Mouse events
@@ -689,8 +691,7 @@ class MusicUniverseVisualization {
         
         // Apply optional border
         if (this.options.showBorder) {
-            this.renderer.domElement.style.border = '2px solid #2196F3';
-            this.renderer.domElement.style.borderRadius = '4px';
+            this.renderer.domElement.classList.add('canvas-highlight');
         }
         
         container.appendChild(this.renderer.domElement);
@@ -905,54 +906,28 @@ class MusicUniverseVisualization {
         
         // Create legend container
         const legend = document.createElement('div');
-        legend.id = 'loading-vectors-legend';
-        legend.style.position = 'absolute';
-        legend.style.right = '10px';
-        legend.style.background = 'rgba(255, 255, 255, 0.95)';
-        legend.style.padding = '15px 20px';
-        legend.style.borderRadius = '12px';
-        legend.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-        legend.style.display = 'none';
-        legend.style.zIndex = '1000';
-        legend.style.fontSize = '13px';
-        legend.style.fontFamily = 'Arial, sans-serif';
-        legend.style.border = '1px solid rgba(0, 0, 0, 0.1)';
-        // Add smooth transitions
-        legend.style.transition = 'top 0.5s ease-in-out, transform 0.5s ease-in-out, opacity 0.3s ease-in-out';
-        legend.style.opacity = '0';
+        legend.id = 'loading-vector-legend';
         
         // Add title
         const title = document.createElement('div');
+        title.className = 'legend-title';
         title.textContent = 'Loading Vectors';
-        title.style.fontWeight = 'bold';
-        title.style.marginBottom = '10px';
-        title.style.fontSize = '14px';
-        title.style.borderBottom = '1px solid #ddd';
-        title.style.paddingBottom = '8px';
-        title.style.textAlign = 'center';
         legend.appendChild(title);
         
         // Add items for each feature
         Object.entries(this.featureColors).forEach(([feature, colorHex]) => {
             const item = document.createElement('div');
-            item.style.display = 'flex';
-            item.style.alignItems = 'center';
-            item.style.marginBottom = '6px';
+            item.className = 'legend-item';
             
             // Color box
             const colorBox = document.createElement('div');
-            colorBox.style.width = '16px';
-            colorBox.style.height = '16px';
+            colorBox.className = 'legend-color-box';
             colorBox.style.backgroundColor = `#${colorHex.toString(16).padStart(6, '0')}`;
-            colorBox.style.marginRight = '10px';
-            colorBox.style.border = '1px solid #999';
-            colorBox.style.borderRadius = '2px';
-            colorBox.style.flexShrink = '0';
             
             // Feature name
             const label = document.createElement('span');
+            label.className = 'legend-label';
             label.textContent = feature.charAt(0).toUpperCase() + feature.slice(1);
-            label.style.fontSize = '12px';
             
             item.appendChild(colorBox);
             item.appendChild(label);
@@ -1057,18 +1032,7 @@ class MusicUniverseVisualization {
      */
     createTooltip() {
         this.tooltip = document.createElement('div');
-        this.tooltip.id = 'three-tooltip';
-        this.tooltip.style.position = 'absolute';
-        this.tooltip.style.padding = '10px';
-        this.tooltip.style.background = 'rgba(0, 0, 0, 0.8)';
-        this.tooltip.style.color = 'white';
-        this.tooltip.style.borderRadius = '5px';
-        this.tooltip.style.pointerEvents = 'none';
-        this.tooltip.style.display = 'none';
-        this.tooltip.style.fontSize = '12px';
-        this.tooltip.style.zIndex = '1000';
-        this.tooltip.style.minWidth = '220px';
-        this.tooltip.style.maxWidth = '280px';
+        this.tooltip.id = 'track-tooltip';
         document.getElementById(this.containerId).appendChild(this.tooltip);
     }
 
@@ -1131,9 +1095,9 @@ class MusicUniverseVisualization {
                     ? `Next Year from ${new Date(this.currentWeek).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
                     : `${this.selectedYear}`;
                 billboardInfo = `
-                    <div style="margin-bottom: 8px; padding: 8px; background: rgba(255, 215, 0, 0.2); border-radius: 4px; border: 1px solid rgba(255, 215, 0, 0.5);">
-                        <strong style="font-size: 12px; color: #FFD700;">🏆 Peak Rank: #${peakRank}</strong><br>
-                        <span style="font-size: 11px; color: #999;">${timeframe}</span>
+                    <div class="tooltip-peak-rank">
+                        <strong>🏆 Peak Rank: #${peakRank}</strong><br>
+                        <span>${timeframe}</span>
                     </div>
                 `;
             }
@@ -1162,25 +1126,25 @@ class MusicUniverseVisualization {
             const displayValue = feature.displayValue || feature.value.toFixed(2);
             
             barsHtml += `
-                <div style="margin: 6px 0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                        <span style="font-size: 11px;">${feature.name}</span>
-                        <span style="font-size: 11px; color: #aaa;">${displayValue}</span>
+                <div class="tooltip-feature">
+                    <div class="tooltip-feature-header">
+                        <span>${feature.name}</span>
+                        <span>${displayValue}</span>
                     </div>
-                    <div style="background: rgba(255,255,255,0.2); border-radius: 3px; height: 6px; width: 100%;">
-                        <div style="background: linear-gradient(90deg, #4CAF50, #8BC34A); border-radius: 3px; height: 100%; width: ${percentage}%;"></div>
+                    <div class="tooltip-feature-bar-container">
+                        <div class="tooltip-feature-bar" style="width: ${percentage}%;"></div>
                     </div>
                 </div>
             `;
         });
         
         this.tooltip.innerHTML = `
-            <div style="margin-bottom: 8px;">
-                <strong style="font-size: 13px;">${data.name || 'Unknown'}</strong><br>
-                <em style="font-size: 11px; color: #ccc;">${artistName}</em>
+            <div class="tooltip-track-info">
+                <strong>${data.name || 'Unknown'}</strong><br>
+                <em>${artistName}</em>
             </div>
             ${billboardInfo}
-            <hr style="margin: 8px 0; border: none; border-top: 1px solid rgba(255,255,255,0.3);">
+            <hr class="tooltip-divider">
             ${barsHtml}
         `;
         this.tooltip.style.display = 'block';
@@ -1739,10 +1703,9 @@ class MusicUniverseVisualization {
             
             if (matches.length > 0) {
                 genreSuggestions.innerHTML = matches.map(g => 
-                    `<div style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;" 
-                          class="genre-option" data-genre="${g.genre}">
+                    `<div class="genre-option" data-genre="${g.genre}">
                         <span>${this.capitalizeGenre(g.genre)}</span>
-                        <span style="color: #999; font-size: 12px;">${g.count}</span>
+                        <span class="genre-count">${g.count}</span>
                     </div>`
                 ).join('');
                 genreSuggestions.style.display = 'block';
@@ -1778,16 +1741,9 @@ class MusicUniverseVisualization {
                         clearButton.classList.remove('hidden');
                     });
                     
-                    option.addEventListener('mouseenter', (e) => {
-                        e.target.style.background = '#e3f2fd';
-                    });
-                    
-                    option.addEventListener('mouseleave', (e) => {
-                        e.target.style.background = 'white';
-                    });
                 });
             } else {
-                genreSuggestions.innerHTML = '<div style="padding: 8px; color: #999;">No matches found</div>';
+                genreSuggestions.innerHTML = '<div class="genre-no-matches">No matches found</div>';
                 genreSuggestions.style.display = 'block';
             }
         });
