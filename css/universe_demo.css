@@ -82,6 +82,10 @@ p {
     margin-bottom: 25px;
 }
 
+.input-wrapper {
+    position: relative;
+}
+
 label {
     display: block;
     font-weight: 600;
@@ -119,7 +123,20 @@ select option {
     color: #333;
 }
 
+/* Placeholder style for select dropdown */
+select.placeholder-active {
+    color: #999;
+}
+
+select option:disabled {
+    color: #999;
+}
+
 #genre-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
     max-height: 150px;
     overflow-y: auto;
     background: #fff;
@@ -128,6 +145,7 @@ select option {
     margin-top: 5px;
     display: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 100;
 }
 
 .genre-option {
@@ -166,6 +184,10 @@ button {
 button:hover {
     background: #e3f2fd;
     border-color: #2196F3;
+}
+
+button.hidden {
+    visibility: hidden;
 }
 
 #reset-view {

@@ -44,8 +44,8 @@
             
             <div class="control-section">
                 <label for="color-feature">Color By</label>
-                <select id="color-feature">
-                    <option value="none" selected>None (Grey)</option>
+                <select id="color-feature" class="placeholder-active">
+                    <option value="" selected disabled>Select an audio feature...</option>
                     <option value="energy">Energy</option>
                     <option value="danceability">Danceability</option>
                     <option value="valence">Valence</option>
@@ -61,9 +61,11 @@
 
             <div class="control-section">
                 <label for="genre-filter">Filter by Genre</label>
-                <input type="text" id="genre-filter" placeholder="Search genres...">
-                <div id="genre-suggestions"></div>
-                <button id="clear-genre" style="display: none;">Clear Filter</button>
+                <div class="input-wrapper">
+                    <input type="text" id="genre-filter" placeholder="Search genres..." autocomplete="off">
+                    <div id="genre-suggestions"></div>
+                </div>
+                <button id="clear-genre" class="hidden">Clear Filter</button>
             </div>
         </div>
     </div>

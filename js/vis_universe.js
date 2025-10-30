@@ -136,7 +136,7 @@ class MusicUniverseVisualization {
         
         // Create camera
         this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 1000);
-        this.camera.position.set(7, 6, 7);
+        this.camera.position.set(7, 4, 7);
         
                 // Create renderer
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -747,7 +747,13 @@ class MusicUniverseVisualization {
     setupEventListeners() {
         const dropdown = document.getElementById('color-feature');
         dropdown.addEventListener('change', () => {
-            this.updateColors(dropdown.value, true);
+            // Remove placeholder styling when a real option is selected
+            if (dropdown.value !== '') {
+                dropdown.classList.remove('placeholder-active');
+            }
+            // Default to 'none' if placeholder is somehow selected
+            const selectedValue = dropdown.value || 'none';
+            this.updateColors(selectedValue, true);
         });
         
         // Genre filter search
@@ -785,7 +791,7 @@ class MusicUniverseVisualization {
                         this.filterByGenre(genre);
                         genreInput.value = this.capitalizeGenre(genre);
                         genreSuggestions.style.display = 'none';
-                        clearButton.style.display = 'block';
+                        clearButton.classList.remove('hidden');
                     });
                     
                     option.addEventListener('mouseenter', (e) => {
@@ -806,7 +812,7 @@ class MusicUniverseVisualization {
         clearButton.addEventListener('click', () => {
             this.selectedGenre = null;
             genreInput.value = '';
-            clearButton.style.display = 'none';
+            clearButton.classList.add('hidden');
             this.updateColors(this.currentColorFeature, true);
         });
         
@@ -840,7 +846,7 @@ class MusicUniverseVisualization {
     resetView() {
         // Animate camera back to home position
         const startPosition = this.camera.position.clone();
-        const targetPosition = new THREE.Vector3(6, 3, 6);
+        const targetPosition = new THREE.Vector3(7, 4, 7);
         const startTarget = this.controls.target.clone();
         const targetTarget = new THREE.Vector3(0, 0, 0);
         
