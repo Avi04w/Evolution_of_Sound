@@ -65,6 +65,11 @@ class MusicUniverseVisualization {
         this.hoveredPoint = null;
         this.tooltip = null;
         
+        // PCA Loading Vectors
+        this.loadingVectors = null;
+        this.loadingArrows = [];
+        this.showLoadings = false;
+        
         // Dimensions (will be set dynamically)
         this.width = 0;
         this.height = 0;
@@ -77,8 +82,10 @@ class MusicUniverseVisualization {
         try {
             await this.loadData();
             await this.loadBillboardData();
+            await this.loadPCALoadings();
             this.initScene();
             this.setupEventListeners();
+            this.setupIntersectionObserver();
             console.log('Three.js visualization ready');
         } catch (error) {
             console.error('Error initializing visualization:', error);
@@ -206,6 +213,36 @@ class MusicUniverseVisualization {
         });
         
         console.log('Created Billboard indexes for fast lookups');
+    }
+    
+    /**
+     * Load PCA loading vectors from CSV
+     */
+    async loadPCALoadings() {
+        try {
+            const response = await fetch('data/processed/spotify_track_pca_loadings.csv');
+            const text = await response.text();
+            
+            // Parse CSV
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',').slice(1); // Skip first empty column
+            
+            this.loadingVectors = {};
+            
+            for (let i = 1; i < lines.length; i++) {
+                const parts = lines[i].split(',');
+                const featureName = parts[0];
+                const pc0 = parseFloat(parts[1]);
+                const pc1 = parseFloat(parts[2]);
+                const pc2 = parseFloat(parts[3]);
+                
+                this.loadingVectors[featureName] = { pc0, pc1, pc2 };
+            }
+            
+            console.log('Loaded PCA loading vectors:', this.loadingVectors);
+        } catch (error) {
+            console.error('Error loading PCA loadings:', error);
+        }
     }
 
     /**
@@ -663,6 +700,9 @@ class MusicUniverseVisualization {
         // Create point cloud
         this.createPointCloud();
         
+        // Create loading arrows
+        this.createLoadingArrows();
+        
         // Set initial colors
         this.updateColors(this.currentColorFeature, false);
         
@@ -727,9 +767,9 @@ class MusicUniverseVisualization {
                     float finalAlpha = vAlpha;
                     
                     // For dimmed points, use much lower alpha
-                    if (vAlpha < 0.3) {
-                        finalAlpha = finalAlpha * 0.15; // Very low alpha
-                    }
+                    // if (vAlpha < 0.3) {
+                    //     finalAlpha = finalAlpha * 0.15; // Very low alpha
+                    // }
                     
                     // Use alpha test to reduce blending artifacts with depthWrite
                     // Only write depth for sufficiently opaque fragments
@@ -777,6 +817,215 @@ class MusicUniverseVisualization {
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
         return texture;
+    }
+
+    /**
+     * Create PCA loading vector arrows
+     */
+    createLoadingArrows() {
+        if (!this.loadingVectors) return;
+        
+        // Color map for each feature (store as class property for legend)
+        this.featureColors = {
+            'danceability': 0xFF0000,      // Red
+            'energy': 0xFF7F00,            // Orange
+            'key': 0xFFFF00,               // Yellow
+            'loudness': 0x00FF00,          // Green
+            'mode': 0x00FFFF,              // Cyan
+            'speechiness': 0x0000FF,       // Blue
+            'acousticness': 0x7F00FF,      // Purple
+            'instrumentalness': 0xFF00FF,  // Magenta
+            'liveness': 0xFFC0CB,          // Pink
+            'valence': 0xA52A2A            // Brown
+        };
+        
+        // Calculate reference length (use energy as reference)
+        const energyLoading = this.loadingVectors['energy'];
+        const energyDirection = new THREE.Vector3(energyLoading.pc0, energyLoading.pc1, energyLoading.pc2);
+        const referenceLength = energyDirection.length() * 7; // Scale factor of 7
+        
+        Object.entries(this.loadingVectors).forEach(([feature, loading]) => {
+            const direction = new THREE.Vector3(loading.pc0, loading.pc1, loading.pc2);
+            // Normalize all arrows to the same length (reference length)
+            const normalizedLength = referenceLength;
+            const color = this.featureColors[feature] || 0xFFFFFF;
+            
+            // Create arrow (no text labels - we'll use a legend instead)
+            const arrow = new THREE.ArrowHelper(
+                direction.normalize(),
+                new THREE.Vector3(0, 0, 0), // Origin
+                normalizedLength,
+                color,
+                normalizedLength * 0.1, // Head length (reduced from 0.2)
+                normalizedLength * 0.08  // Head width (reduced from 0.15)
+            );
+            
+            arrow.visible = false; // Hidden by default
+            arrow.userData.feature = feature;
+            
+            this.scene.add(arrow);
+            this.loadingArrows.push(arrow);
+        });
+        
+        console.log(`Created ${this.loadingArrows.length} loading vector arrows`);
+        
+        // Create legend for loading vectors
+        this.createLoadingVectorLegend();
+    }
+    
+    /**
+     * Create legend for loading vectors
+     */
+    createLoadingVectorLegend() {
+        const container = document.getElementById(this.containerId);
+        
+        // Create legend container
+        const legend = document.createElement('div');
+        legend.id = 'loading-vectors-legend';
+        legend.style.position = 'absolute';
+        legend.style.right = '10px';
+        legend.style.background = 'rgba(255, 255, 255, 0.95)';
+        legend.style.padding = '15px 20px';
+        legend.style.borderRadius = '12px';
+        legend.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+        legend.style.display = 'none';
+        legend.style.zIndex = '1000';
+        legend.style.fontSize = '13px';
+        legend.style.fontFamily = 'Arial, sans-serif';
+        legend.style.border = '1px solid rgba(0, 0, 0, 0.1)';
+        // Add smooth transitions
+        legend.style.transition = 'top 0.5s ease-in-out, transform 0.5s ease-in-out, opacity 0.3s ease-in-out';
+        legend.style.opacity = '0';
+        
+        // Add title
+        const title = document.createElement('div');
+        title.textContent = 'Loading Vectors';
+        title.style.fontWeight = 'bold';
+        title.style.marginBottom = '10px';
+        title.style.fontSize = '14px';
+        title.style.borderBottom = '1px solid #ddd';
+        title.style.paddingBottom = '8px';
+        title.style.textAlign = 'center';
+        legend.appendChild(title);
+        
+        // Add items for each feature
+        Object.entries(this.featureColors).forEach(([feature, colorHex]) => {
+            const item = document.createElement('div');
+            item.style.display = 'flex';
+            item.style.alignItems = 'center';
+            item.style.marginBottom = '6px';
+            
+            // Color box
+            const colorBox = document.createElement('div');
+            colorBox.style.width = '16px';
+            colorBox.style.height = '16px';
+            colorBox.style.backgroundColor = `#${colorHex.toString(16).padStart(6, '0')}`;
+            colorBox.style.marginRight = '10px';
+            colorBox.style.border = '1px solid #999';
+            colorBox.style.borderRadius = '2px';
+            colorBox.style.flexShrink = '0';
+            
+            // Feature name
+            const label = document.createElement('span');
+            label.textContent = feature.charAt(0).toUpperCase() + feature.slice(1);
+            label.style.fontSize = '12px';
+            
+            item.appendChild(colorBox);
+            item.appendChild(label);
+            legend.appendChild(item);
+        });
+        
+        container.appendChild(legend);
+        this.loadingVectorLegend = legend;
+    }
+    
+    /**
+     * Toggle visibility of loading arrows and legend
+     */
+    toggleLoadingArrows(visible) {
+        this.showLoadings = visible;
+        this.loadingArrows.forEach(arrow => {
+            arrow.visible = visible;
+        });
+        
+        // Toggle legend visibility with smooth transition
+        if (this.loadingVectorLegend) {
+            if (visible) {
+                this.loadingVectorLegend.style.display = 'block';
+                // Trigger reflow to enable transition
+                this.loadingVectorLegend.offsetHeight;
+                this.loadingVectorLegend.style.opacity = '1';
+            } else {
+                this.loadingVectorLegend.style.opacity = '0';
+                setTimeout(() => {
+                    if (!this.showLoadings) {
+                        this.loadingVectorLegend.style.display = 'none';
+                    }
+                }, 300); // Match opacity transition duration
+            }
+        }
+        
+        // Recreate color legend with new size if it's visible
+        const colorLegend = document.getElementById('color-legend');
+        if (colorLegend && colorLegend.style.display !== 'none') {
+            // Remove existing legend and recreate with new dimensions
+            d3.select('#color-legend').remove();
+            if (this.billboardMode && this.selectedYear) {
+                this.createBillboardLegend(false);
+            } else if (this.currentColorFeature !== 'none') {
+                this.createLegend(this.currentColorFeature, false);
+            }
+        }
+        
+        // Reposition legends to center them as a unit
+        this.repositionRightLegends();
+        
+        console.log(`Loading arrows ${visible ? 'shown' : 'hidden'}`);
+    }
+    
+    /**
+     * Reposition right-side legends to center them as a unit
+     */
+    repositionRightLegends() {
+        const colorLegend = document.getElementById('color-legend');
+        const loadingLegend = this.loadingVectorLegend;
+        
+        // Check visibility of both legends
+        const colorLegendVisible = colorLegend && colorLegend.style.display !== 'none';
+        const loadingLegendVisible = loadingLegend && loadingLegend.style.display !== 'none';
+        
+        if (!colorLegendVisible && !loadingLegendVisible) {
+            return; // No legends to position
+        }
+        
+        const gap = 20;
+        
+        // Center the unit vertically
+        if (colorLegendVisible && loadingLegendVisible) {
+            // Both legends visible - stack them
+            // Get heights after a small delay to ensure rendering
+            requestAnimationFrame(() => {
+                const colorHeight = colorLegend.getBoundingClientRect().height;
+                const loadingHeight = loadingLegend.getBoundingClientRect().height;
+                const totalHeight = colorHeight + loadingHeight + gap;
+                
+                // Position color legend at top of the centered unit
+                colorLegend.style.top = `calc(50% - ${totalHeight / 2}px)`;
+                colorLegend.style.transform = 'none';
+                
+                // Position loading legend below color legend
+                loadingLegend.style.top = `calc(50% - ${totalHeight / 2}px + ${colorHeight + gap}px)`;
+                loadingLegend.style.transform = 'none';
+            });
+        } else if (colorLegendVisible) {
+            // Only color legend - restore default centering
+            colorLegend.style.top = '50%';
+            colorLegend.style.transform = 'translateY(-50%)';
+        } else if (loadingLegendVisible) {
+            // Only loading legend - center it
+            loadingLegend.style.top = '50%';
+            loadingLegend.style.transform = 'translateY(-50%)';
+        }
     }
 
     /**
@@ -1063,7 +1312,7 @@ class MusicUniverseVisualization {
                     newColors[i * 3] = 0.3;
                     newColors[i * 3 + 1] = 0.3;
                     newColors[i * 3 + 2] = 0.3;
-                    newAlphas[i] = 0.1;
+                    newAlphas[i] = 0.3;
                 }
             }
         } else if (feature === 'none') {
@@ -1080,7 +1329,7 @@ class MusicUniverseVisualization {
                     newColors[i * 3] = 0.3;
                     newColors[i * 3 + 1] = 0.3;
                     newColors[i * 3 + 2] = 0.3;
-                    newAlphas[i] = 0.1; // Very low opacity
+                    newAlphas[i] = 0.3; // Very low opacity
                 }
             }
         } else {
@@ -1102,7 +1351,7 @@ class MusicUniverseVisualization {
                     newColors[i * 3] = 0.3;
                     newColors[i * 3 + 1] = 0.3;
                     newColors[i * 3 + 2] = 0.3;
-                    newAlphas[i] = 0.1; // Very low opacity
+                    newAlphas[i] = 0.3; // Very low opacity
                 }
             });
         }
@@ -1128,6 +1377,9 @@ class MusicUniverseVisualization {
             d3.select('#color-legend').style('display', 'block');
             this.createLegend(feature);
         }
+        
+        // Reposition legends after visibility changes
+        setTimeout(() => this.repositionRightLegends(), 100);
         
         console.log(`Updated colors to ${this.billboardMode ? 'Billboard peak rankings' : feature}`);
     }
@@ -1179,8 +1431,9 @@ class MusicUniverseVisualization {
         
         const container = d3.select(`#${this.containerId}`);
         const legendWidth = 20;
-        const legendHeight = 300;
-        const legendMargin = { top: 50, right: 30, bottom: 50 };
+        // Reduce height when loading vectors are visible to fit both legends
+        const legendHeight = this.showLoadings ? 200 : 300;
+        const legendMargin = { top: 40, right: 30, bottom: 40 };
         
         let svg = d3.select('#color-legend');
         let g, axisGroup, titleText;
@@ -1195,7 +1448,8 @@ class MusicUniverseVisualization {
                 .style('transform', 'translateY(-50%)')
                 .attr('width', legendWidth + legendMargin.right + 60 + shadowPadding * 2)
                 .attr('height', legendHeight + legendMargin.top + legendMargin.bottom + shadowPadding * 2)
-                .style('overflow', 'visible');
+                .style('overflow', 'visible')
+                .style('transition', 'top 0.5s ease-in-out, transform 0.5s ease-in-out, height 0.5s ease-in-out');
             
             // Add white background box
             svg.append('rect')
@@ -1273,8 +1527,9 @@ class MusicUniverseVisualization {
     createBillboardLegend(animate = true) {
         const container = d3.select(`#${this.containerId}`);
         const legendWidth = 20;
-        const legendHeight = 300;
-        const legendMargin = { top: 50, right: 30, bottom: 50 };
+        // Reduce height when loading vectors are visible to fit both legends
+        const legendHeight = this.showLoadings ? 200 : 300;
+        const legendMargin = { top: 40, right: 30, bottom: 40 };
         
         let svg = d3.select('#color-legend');
         let g, axisGroup, titleText;
@@ -1289,7 +1544,8 @@ class MusicUniverseVisualization {
                 .style('transform', 'translateY(-50%)')
                 .attr('width', legendWidth + legendMargin.right + 60 + shadowPadding * 2)
                 .attr('height', legendHeight + legendMargin.top + legendMargin.bottom + shadowPadding * 2)
-                .style('overflow', 'visible');
+                .style('overflow', 'visible')
+                .style('transition', 'top 0.5s ease-in-out, transform 0.5s ease-in-out, height 0.5s ease-in-out');
             
             // Add white background box
             svg.append('rect')
@@ -1527,6 +1783,14 @@ class MusicUniverseVisualization {
             });
         }
         
+        // PCA loadings checkbox
+        const showLoadingsCheckbox = document.getElementById('show-loadings');
+        if (showLoadingsCheckbox) {
+            showLoadingsCheckbox.addEventListener('change', (e) => {
+                this.toggleLoadingArrows(e.target.checked);
+            });
+        }
+        
         // Add window resize listener
         window.addEventListener('resize', () => this.onWindowResize());
         
@@ -1534,6 +1798,30 @@ class MusicUniverseVisualization {
         if (this.options.requireModifierForZoom) {
             this.setupModifierZoom();
         }
+    }
+    
+    /**
+     * Setup intersection observer to auto-check loading vectors when scrolled into view
+     */
+    setupIntersectionObserver() {
+        const pcaSection = document.getElementById('pca-loadings-section');
+        const showLoadingsCheckbox = document.getElementById('show-loadings');
+        
+        if (!pcaSection || !showLoadingsCheckbox) return;
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !this.showLoadings) {
+                    // Auto-check the checkbox when section becomes visible
+                    showLoadingsCheckbox.checked = true;
+                    this.toggleLoadingArrows(true);
+                }
+            });
+        }, {
+            threshold: 0.5 // Trigger when 50% of the section is visible
+        });
+        
+        observer.observe(pcaSection);
     }
     
     /**
