@@ -69,6 +69,36 @@
             </div>
         </div>
     </div>
+
+    <!-- Page 3: Billboard Charts -->
+    <div class="page">
+        <div class="content-box">
+            <h2>Billboard Hot 100</h2>
+            <p>
+                Explore how hit songs are distributed in the music universe. Use the timeline to 
+                travel through time and see a rolling 1-year window of chart data - each point shows 
+                all songs that charted in the following year, colored by their peak ranking.
+            </p>
+            
+            <div class="control-section">
+                <label for="billboard-timeline">Timeline</label>
+                <div id="timeline-container">
+                    <div id="timeline-track"></div>
+                    <div id="timeline-ticks"></div>
+                    <div id="timeline-slider"></div>
+                    <div id="timeline-labels"></div>
+                </div>
+                <div id="timeline-year-display">
+                    <div class="year">—</div>
+                    <div class="date-range">No year selected</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="play-timeline" style="flex: 1;">▶ Play</button>
+                    <button id="clear-billboard" class="hidden" style="flex: 1;">Clear Billboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="scroll-hint">↓ Scroll to explore ↓</div>

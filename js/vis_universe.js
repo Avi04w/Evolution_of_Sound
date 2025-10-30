@@ -49,6 +49,16 @@ class MusicUniverseVisualization {
         this.allGenres = [];
         this.selectedGenre = null;
         
+        // Billboard data
+        this.billboardData = [];
+        this.availableYears = [];
+        this.availableWeeks = [];
+        this.selectedYear = null;
+        this.currentWeek = null; // Current week during animation
+        this.billboardMode = false;
+        this.timelineIsPlaying = false;
+        this.timelineAnimationId = null;
+        
         // Interaction
         this.raycaster = null;
         this.mouse = null;
@@ -66,6 +76,7 @@ class MusicUniverseVisualization {
     async init() {
         try {
             await this.loadData();
+            await this.loadBillboardData();
             this.initScene();
             this.setupEventListeners();
             console.log('Three.js visualization ready');
@@ -118,6 +129,479 @@ class MusicUniverseVisualization {
             .sort((a, b) => b.count - a.count);
         
         console.log(`Found ${this.allGenres.length} unique genres`);
+    }
+
+    /**
+     * Load Billboard Hot 100 chart data
+     */
+    async loadBillboardData() {
+        try {
+            const response = await fetch('data/processed/billboard.ndjson');
+            const text = await response.text();
+            
+            this.billboardData = text.split('\n')
+                .filter(line => line.trim() !== '')
+                .map(line => JSON.parse(line));
+
+            // Sort by date for efficient filtering
+            this.billboardData.sort((a, b) => a.date.localeCompare(b.date));
+
+            console.log(`Loaded ${this.billboardData.length} Billboard chart entries`);
+            
+            // Filter to 1980 onwards
+            this.billboardData = this.billboardData.filter(entry => 
+                new Date(entry.date).getFullYear() >= 1980
+            );
+            
+            console.log(`Filtered to ${this.billboardData.length} entries from 1980+`);
+            
+            // Extract unique years from dates
+            const yearSet = new Set(this.billboardData.map(entry => {
+                return new Date(entry.date).getFullYear();
+            }));
+            this.availableYears = Array.from(yearSet).sort((a, b) => b - a); // Most recent first
+            
+            console.log(`Found ${this.availableYears.length} unique years in Billboard data`);
+            
+            // Extract unique weeks sorted chronologically
+            const weekSet = new Set(this.billboardData.map(entry => entry.date));
+            this.availableWeeks = Array.from(weekSet).sort(); // Already sorted
+            console.log(`Found ${this.availableWeeks.length} unique weeks in Billboard data`);
+            
+            // Create indexed data structures for faster lookups
+            this.createBillboardIndexes();
+            
+            // Populate year dropdown
+            this.populateYearDropdown();
+        } catch (error) {
+            console.error('Error loading Billboard data:', error);
+        }
+    }
+    
+    /**
+     * Create indexed data structures for faster Billboard lookups
+     */
+    createBillboardIndexes() {
+        // Index by week for O(1) lookups
+        this.billboardByWeek = new Map();
+        this.billboardData.forEach(entry => {
+            if (!this.billboardByWeek.has(entry.date)) {
+                this.billboardByWeek.set(entry.date, new Map());
+            }
+            this.billboardByWeek.get(entry.date).set(entry.id, entry.rank);
+        });
+        
+        // Index by year for faster yearly aggregation
+        this.billboardByYear = new Map();
+        this.billboardData.forEach(entry => {
+            const year = new Date(entry.date).getFullYear();
+            if (!this.billboardByYear.has(year)) {
+                this.billboardByYear.set(year, new Map());
+            }
+            const yearData = this.billboardByYear.get(year);
+            const currentBest = yearData.get(entry.id);
+            if (currentBest === undefined || entry.rank < currentBest) {
+                yearData.set(entry.id, entry.rank);
+            }
+        });
+        
+        console.log('Created Billboard indexes for fast lookups');
+    }
+
+    /**
+     * Create the timeline UI with available years
+     */
+    populateYearDropdown() {
+        // Create timeline
+        this.createTimeline();
+    }
+    
+    /**
+     * Format date range display with fixed-width dash
+     */
+    formatDateRange(startDate, endDate) {
+        const startStr = startDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric'
+        });
+        const endStr = endDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric'
+        });
+        
+        // Pad to ensure dash stays in same position
+        const maxLen = 16; // "MMM DD, YYYY" is ~13-14 chars
+        const paddedStart = startStr.padEnd(maxLen, ' ');
+        
+        return `${paddedStart} – ${endStr}`;
+    }
+    
+    /**
+     * Create interactive timeline
+     */
+    createTimeline() {
+        const container = document.getElementById('timeline-container');
+        const slider = document.getElementById('timeline-slider');
+        const track = document.getElementById('timeline-track');
+        const labelsContainer = document.getElementById('timeline-labels');
+        const yearDisplay = document.getElementById('timeline-year-display');
+        
+        if (!container || !slider || !track || !labelsContainer) return;
+        
+        // Sort years ascending for timeline
+        const sortedYears = [...this.availableYears].sort((a, b) => a - b);
+        const minYear = Math.max(1980, sortedYears[0]); // Set minimum to 1980
+        const maxYear = sortedYears[sortedYears.length - 1];
+        
+        // Filter years to only include 1980 and later
+        const filteredYears = sortedYears.filter(year => year >= 1980);
+        
+        // Store timeline state
+        this.timelineMinYear = minYear;
+        this.timelineMaxYear = maxYear;
+        this.timelineSortedYears = filteredYears;
+        
+        // Create tick marks for each year
+        const ticksContainer = document.getElementById('timeline-ticks');
+        if (ticksContainer) {
+            ticksContainer.innerHTML = '';
+            
+            // Create a tick for each year boundary
+            for (let year = minYear; year <= maxYear; year++) {
+                // Find the first week of this year
+                const yearStart = `${year}-01-01`;
+                const weekIndex = this.availableWeeks.findIndex(week => week >= yearStart);
+                
+                if (weekIndex >= 0) {
+                    const tick = document.createElement('div');
+                    tick.className = 'timeline-tick';
+                    
+                    // Make every 5th year a major tick
+                    if (year % 5 === 0) {
+                        tick.classList.add('major');
+                    }
+                    
+                    const position = (weekIndex / (this.availableWeeks.length - 1)) * 100;
+                    tick.style.left = `${position}%`;
+                    ticksContainer.appendChild(tick);
+                }
+            }
+        }
+        
+        // Calculate puck width (1 year = 52 weeks)
+        const oneYearInWeeks = 52;
+        const puckWidthPercent = (oneYearInWeeks / (this.availableWeeks.length - 1)) * 100;
+        slider.style.width = `${puckWidthPercent}%`;
+        
+        // Create year labels (show every few years to avoid crowding)
+        const yearRange = maxYear - minYear;
+        const labelStep = yearRange <= 10 ? 1 : yearRange <= 20 ? 2 : 5;
+        
+        labelsContainer.innerHTML = '';
+        for (let year = minYear; year <= maxYear; year += labelStep) {
+            const label = document.createElement('div');
+            label.textContent = year;
+            label.style.flex = '0 0 auto';
+            labelsContainer.appendChild(label);
+        }
+        
+        // Add final year if not included
+        if ((maxYear - minYear) % labelStep !== 0) {
+            const label = document.createElement('div');
+            label.textContent = maxYear;
+            labelsContainer.appendChild(label);
+        }
+        
+        // Timeline interaction - now based on weeks
+        let isDragging = false;
+        
+        const updateSliderPosition = (clientX) => {
+            const rect = track.getBoundingClientRect();
+            const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+            const percentage = x / rect.width;
+            
+            // Map to week index (smooth, continuous position)
+            let weekIndex = Math.round(percentage * (this.availableWeeks.length - 1));
+            
+            // Constrain the week index so that endDate doesn't exceed max date
+            // Find max valid week index where week + 52 weeks <= last week
+            const maxDate = new Date(this.availableWeeks[this.availableWeeks.length - 1]);
+            const maxValidIndex = this.availableWeeks.findIndex(week => {
+                const endDate = new Date(week);
+                endDate.setFullYear(endDate.getFullYear() + 1);
+                return endDate > maxDate;
+            });
+            
+            // If we found a constraint, apply it; otherwise allow full range
+            if (maxValidIndex > 0) {
+                weekIndex = Math.min(weekIndex, maxValidIndex - 1);
+            }
+            
+            const week = this.availableWeeks[weekIndex];
+            const weekDate = new Date(week);
+            const year = weekDate.getFullYear();
+            
+            // Update slider position smoothly based on week
+            slider.style.left = `${(weekIndex / (this.availableWeeks.length - 1)) * 100}%`;
+            
+            // Store current week
+            this.currentWeek = week;
+            this.selectedYear = year;
+            
+            // Calculate end date (1 year later) - create independent Date objects
+            const startDate = new Date(week);
+            const endDate = new Date(week);
+            endDate.setFullYear(endDate.getFullYear() + 1);
+            
+            // Update year display with new format
+            const yearEl = yearDisplay.querySelector('.year');
+            const dateRangeEl = yearDisplay.querySelector('.date-range');
+            if (yearEl && dateRangeEl) {
+                yearEl.textContent = year;
+                dateRangeEl.textContent = this.formatDateRange(startDate, endDate);
+            }
+            
+            // Update visualization
+            this.billboardMode = true;
+            this.updateColors('none', false); // No animation for smooth dragging
+            
+            // Show clear button
+            const clearButton = document.getElementById('clear-billboard');
+            if (clearButton) {
+                clearButton.classList.remove('hidden');
+            }
+            
+            // Disable color dropdown
+            const dropdown = document.getElementById('color-feature');
+            if (dropdown) {
+                dropdown.disabled = true;
+                dropdown.style.opacity = '0.5';
+                dropdown.style.cursor = 'not-allowed';
+            }
+        };
+        
+        const startDrag = (e) => {
+            isDragging = true;
+            slider.style.cursor = 'grabbing';
+            // Pause animation if user manually interacts
+            this.pauseTimeline();
+            updateSliderPosition(e.clientX || e.touches[0].clientX);
+        };
+        
+        const drag = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            updateSliderPosition(e.clientX || e.touches[0].clientX);
+        };
+        
+        const endDrag = () => {
+            isDragging = false;
+            slider.style.cursor = 'grab';
+        };
+        
+        // Mouse events
+        slider.addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+        
+        // Touch events
+        slider.addEventListener('touchstart', startDrag);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('touchend', endDrag);
+        
+        // Click on track to jump
+        track.addEventListener('click', (e) => {
+            updateSliderPosition(e.clientX);
+        });
+        
+        // Store updateSliderPosition for use in play function
+        this.updateTimelineSliderPosition = updateSliderPosition;
+    }
+    
+    /**
+     * Play timeline animation with weekly granularity
+     */
+    playTimeline() {
+        if (this.timelineIsPlaying) return;
+        
+        this.timelineIsPlaying = true;
+        const playButton = document.getElementById('play-timeline');
+        if (playButton) {
+            playButton.textContent = '⏸ Pause';
+        }
+        
+        // Calculate max valid week index (where endDate doesn't exceed max date)
+        const maxDate = new Date(this.availableWeeks[this.availableWeeks.length - 1]);
+        const maxValidIndex = this.availableWeeks.findIndex(week => {
+            const endDate = new Date(week);
+            endDate.setFullYear(endDate.getFullYear() + 1);
+            return endDate > maxDate;
+        });
+        const maxWeekIndex = maxValidIndex > 0 ? maxValidIndex - 1 : this.availableWeeks.length - 1;
+        
+        // Find current week index or start from beginning
+        let currentWeekIndex = 0;
+        if (this.selectedYear) {
+            // Find the first week of the selected year
+            const currentYearWeeks = this.availableWeeks.filter(week => 
+                new Date(week).getFullYear() === parseInt(this.selectedYear)
+            );
+            if (currentYearWeeks.length > 0) {
+                currentWeekIndex = this.availableWeeks.indexOf(currentYearWeeks[0]);
+            }
+        }
+        
+        const animateWeek = () => {
+            if (!this.timelineIsPlaying) return;
+            
+            const week = this.availableWeeks[currentWeekIndex];
+            const weekDate = new Date(week);
+            const year = weekDate.getFullYear();
+            
+            // Store current week for visualization
+            this.currentWeek = week;
+            this.selectedYear = year;
+            this.billboardMode = true;
+            
+            // Calculate end date (1 year later) - create independent Date objects
+            const startDate = new Date(week);
+            const endDate = new Date(week);
+            endDate.setFullYear(endDate.getFullYear() + 1);
+            
+            // Update year display
+            const yearDisplay = document.getElementById('timeline-year-display');
+            if (yearDisplay) {
+                const yearEl = yearDisplay.querySelector('.year');
+                const dateRangeEl = yearDisplay.querySelector('.date-range');
+                if (yearEl && dateRangeEl) {
+                    yearEl.textContent = year;
+                    dateRangeEl.textContent = this.formatDateRange(startDate, endDate);
+                }
+            }
+            
+            // Update slider position smoothly based on week index
+            const slider = document.getElementById('timeline-slider');
+            if (slider) {
+                const percentage = currentWeekIndex / (this.availableWeeks.length - 1);
+                slider.style.left = `${percentage * 100}%`;
+            }
+            
+            // Update visualization with cumulative data up to this week
+            this.updateColors('none', false); // No animation for smooth playback
+            
+            // Show clear button
+            const clearButton = document.getElementById('clear-billboard');
+            if (clearButton) {
+                clearButton.classList.remove('hidden');
+            }
+            
+            // Disable color dropdown
+            const dropdown = document.getElementById('color-feature');
+            if (dropdown) {
+                dropdown.disabled = true;
+                dropdown.style.opacity = '0.5';
+                dropdown.style.cursor = 'not-allowed';
+            }
+            
+            currentWeekIndex++;
+            
+            // Loop back to start or stop at end (respecting max valid index)
+            if (currentWeekIndex > maxWeekIndex) {
+                currentWeekIndex = 0; // Loop
+            }
+            
+            // Advance every 50ms for smooth weekly animation (20 weeks per second)
+            this.timelineAnimationId = setTimeout(animateWeek, 3);
+        };
+        
+        animateWeek();
+    }
+    
+    /**
+     * Pause timeline animation
+     */
+    pauseTimeline() {
+        this.timelineIsPlaying = false;
+        this.currentWeek = null; // Clear week so it uses yearly aggregate
+        
+        const playButton = document.getElementById('play-timeline');
+        if (playButton) {
+            playButton.textContent = '▶ Play';
+        }
+        
+        if (this.timelineAnimationId) {
+            clearTimeout(this.timelineAnimationId);
+            this.timelineAnimationId = null;
+        }
+        
+        // Keep the current display (year and date range remain visible when paused)
+        if (this.selectedYear) {
+            // Refresh visualization with yearly aggregate
+            this.updateColors('none', true);
+        }
+    }
+
+    /**
+     * Get Billboard peak rankings for a specific year (using index)
+     * Returns a Map of track IDs to their best (lowest) ranking in that year
+     */
+    getBillboardPeakRankingsForYear(year) {
+        return this.billboardByYear.get(parseInt(year)) || new Map();
+    }
+    
+    /**
+     * Get Billboard rankings for a rolling 1-year window starting from a specific week
+     * Returns a Map of track IDs to their best ranking in the year following that week
+     * Uses binary search on sorted data for efficient filtering
+     */
+    getBillboardRankingsUpToWeek(targetWeek) {
+        const endDate = new Date(targetWeek);
+        endDate.setFullYear(endDate.getFullYear() + 1);
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        const rankings = new Map();
+        
+        // Binary search to find start index
+        let startIdx = this.binarySearchWeek(targetWeek);
+        if (startIdx === -1) return rankings;
+        
+        // Iterate from start until we exceed the end date
+        for (let i = startIdx; i < this.billboardData.length; i++) {
+            const entry = this.billboardData[i];
+            if (entry.date >= endDateStr) break;
+            
+            const currentBest = rankings.get(entry.id);
+            if (currentBest === undefined || entry.rank < currentBest) {
+                rankings.set(entry.id, entry.rank);
+            }
+        }
+        
+        return rankings;
+    }
+    
+    /**
+     * Binary search to find the starting index for a given week
+     */
+    binarySearchWeek(targetWeek) {
+        let left = 0;
+        let right = this.billboardData.length - 1;
+        let result = -1;
+        
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            const midDate = this.billboardData[mid].date;
+            
+            if (midDate < targetWeek) {
+                left = mid + 1;
+            } else {
+                result = mid;
+                right = mid - 1;
+            }
+        }
+        
+        return result;
     }
 
     /**
@@ -239,7 +723,7 @@ class MusicUniverseVisualization {
                     float finalAlpha = texColor.a * vAlpha;
                     
                     // For dimmed points, use much lower alpha and scale color down
-                    if (vAlpha < 0.5) {
+                    if (vAlpha < 0.3) {
                         finalAlpha = finalAlpha * 0.15; // Very low alpha
                     }
                     
@@ -328,11 +812,12 @@ class MusicUniverseVisualization {
             this.raycaster.setFromCamera(this.mouse, this.camera);
             const intersects = this.raycaster.intersectObject(this.points);
             
-            // Find first intersected point that matches genre filter
+            // Find first intersected point that matches both genre and Billboard filters
             let validIntersect = null;
             for (let i = 0; i < intersects.length; i++) {
                 const index = intersects[i].index;
-                if (this.trackMatchesGenre(this.parsedData[index])) {
+                const track = this.parsedData[index];
+                if (this.trackMatchesGenre(track) && this.trackMatchesBillboard(track)) {
                     validIntersect = index;
                     break;
                 }
@@ -361,6 +846,26 @@ class MusicUniverseVisualization {
         const artistName = Array.isArray(data.artists) 
             ? data.artists.join(', ') 
             : data.artists || 'Unknown';
+        
+        // Check if this track is in Billboard chart
+        let billboardInfo = '';
+        if (this.billboardMode && this.selectedYear) {
+            const rankings = this.currentWeek 
+                ? this.getBillboardRankingsUpToWeek(this.currentWeek)
+                : this.getBillboardPeakRankingsForYear(this.selectedYear);
+            const peakRank = rankings.get(data.id);
+            if (peakRank !== undefined) {
+                const timeframe = this.currentWeek 
+                    ? `Next Year from ${new Date(this.currentWeek).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                    : `${this.selectedYear}`;
+                billboardInfo = `
+                    <div style="margin-bottom: 8px; padding: 8px; background: rgba(255, 215, 0, 0.2); border-radius: 4px; border: 1px solid rgba(255, 215, 0, 0.5);">
+                        <strong style="font-size: 12px; color: #FFD700;">🏆 Peak Rank: #${peakRank}</strong><br>
+                        <span style="font-size: 11px; color: #999;">${timeframe}</span>
+                    </div>
+                `;
+            }
+        }
         
         // Features to display with their values
         const features = [
@@ -402,6 +907,7 @@ class MusicUniverseVisualization {
                 <strong style="font-size: 13px;">${data.name || 'Unknown'}</strong><br>
                 <em style="font-size: 11px; color: #ccc;">${artistName}</em>
             </div>
+            ${billboardInfo}
             <hr style="margin: 8px 0; border: none; border-top: 1px solid rgba(255,255,255,0.3);">
             ${barsHtml}
         `;
@@ -508,7 +1014,20 @@ class MusicUniverseVisualization {
     }
     
     /**
-     * Update point colors based on feature
+     * Check if track is in current Billboard Hot 100 selection
+     */
+    trackMatchesBillboard(track) {
+        if (!this.billboardMode || !this.selectedYear) return true;
+        
+        const rankings = this.currentWeek 
+            ? this.getBillboardRankingsUpToWeek(this.currentWeek)
+            : this.getBillboardPeakRankingsForYear(this.selectedYear);
+        
+        return rankings.has(track.id);
+    }
+    
+    /**
+     * Update point colors based on feature or Billboard mode
      */
     updateColors(feature, animate = true) {
         const colorAttribute = this.geometry.getAttribute('color');
@@ -519,15 +1038,44 @@ class MusicUniverseVisualization {
         const newColors = new Float32Array(this.parsedData.length * 3);
         const newAlphas = new Float32Array(this.parsedData.length);
         
-        if (feature === 'none') {
-            // Set all points to grey (or dimmed if filtered)
+        // Check if we're in Billboard mode
+        if (this.billboardMode && this.selectedYear) {
+            // Use week-specific data if we're animating, otherwise use yearly aggregate
+            const rankings = this.currentWeek 
+                ? this.getBillboardRankingsUpToWeek(this.currentWeek)
+                : this.getBillboardPeakRankingsForYear(this.selectedYear);
+            
+            for (let i = 0; i < this.parsedData.length; i++) {
+                const track = this.parsedData[i];
+                const peakRank = rankings.get(track.id);
+                
+                if (peakRank !== undefined) {
+                    // Track charted - color by peak ranking (up to current week if animating)
+                    // Rank 1 = best (yellow), Rank 100 = worst (dark purple)
+                    // Invert: (100 - rank) / 99 so rank 1 gets 1.0, rank 100 gets 0.0
+                    const normalizedRank = (100 - peakRank) / 99;
+                    const color = this.getColorFromScale(normalizedRank);
+                    newColors[i * 3] = color[0];
+                    newColors[i * 3 + 1] = color[1];
+                    newColors[i * 3 + 2] = color[2];
+                    newAlphas[i] = 0.9;
+                } else {
+                    // Not on chart - grey out
+                    newColors[i * 3] = 0.3;
+                    newColors[i * 3 + 1] = 0.3;
+                    newColors[i * 3 + 2] = 0.3;
+                    newAlphas[i] = 0.1;
+                }
+            }
+        } else if (feature === 'none') {
+            // Set all points to grey (or dimmed if filtered by genre)
             for (let i = 0; i < this.parsedData.length; i++) {
                 const matches = this.trackMatchesGenre(this.parsedData[i]);
                 if (matches) {
                     newColors[i * 3] = 0.5;     // R
                     newColors[i * 3 + 1] = 0.5; // G
                     newColors[i * 3 + 2] = 0.5; // B
-                    newAlphas[i] = 0.5;
+                    newAlphas[i] = 0.4;
                 } else {
                     // Dimmed grey for non-matching
                     newColors[i * 3] = 0.3;
@@ -571,15 +1119,18 @@ class MusicUniverseVisualization {
         
         this.currentColorFeature = feature;
         
-        // Only show legend if not "none"
-        if (feature === 'none') {
+        // Update legend display
+        if (this.billboardMode && this.selectedYear) {
+            d3.select('#color-legend').style('display', 'block');
+            this.createBillboardLegend();
+        } else if (feature === 'none') {
             d3.select('#color-legend').style('display', 'none');
         } else {
             d3.select('#color-legend').style('display', 'block');
             this.createLegend(feature);
         }
         
-        console.log(`Updated colors to ${feature}`);
+        console.log(`Updated colors to ${this.billboardMode ? 'Billboard peak rankings' : feature}`);
     }
 
     /**
@@ -718,6 +1269,101 @@ class MusicUniverseVisualization {
     }
 
     /**
+     * Create Billboard ranking legend
+     */
+    createBillboardLegend(animate = true) {
+        const container = d3.select(`#${this.containerId}`);
+        const legendWidth = 20;
+        const legendHeight = 300;
+        const legendMargin = { top: 50, right: 30, bottom: 50 };
+        
+        let svg = d3.select('#color-legend');
+        let g, axisGroup, titleText;
+        
+        if (svg.empty()) {
+            const shadowPadding = 10;
+            svg = container.append('svg')
+                .attr('id', 'color-legend')
+                .style('position', 'absolute')
+                .style('right', '10px')
+                .style('top', '50%')
+                .style('transform', 'translateY(-50%)')
+                .attr('width', legendWidth + legendMargin.right + 60 + shadowPadding * 2)
+                .attr('height', legendHeight + legendMargin.top + legendMargin.bottom + shadowPadding * 2)
+                .style('overflow', 'visible');
+            
+            // Add white background box
+            svg.append('rect')
+                .attr('class', 'legend-background')
+                .attr('x', shadowPadding)
+                .attr('y', shadowPadding)
+                .attr('width', legendWidth + legendMargin.right + 60)
+                .attr('height', legendHeight + legendMargin.top + legendMargin.bottom)
+                .attr('rx', 12)
+                .attr('ry', 12)
+                .style('fill', 'rgba(255, 255, 255, 0.95)')
+                .style('stroke', 'rgba(0, 0, 0, 0.1)')
+                .style('stroke-width', '1px')
+                .style('filter', 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))');
+            
+            g = svg.append('g')
+                .attr('transform', `translate(${20 + shadowPadding}, ${legendMargin.top + shadowPadding})`);
+            
+            const defs = svg.append('defs');
+            const gradient = defs.append('linearGradient')
+                .attr('id', 'viridis-gradient')
+                .attr('x1', '0%')
+                .attr('y1', '100%')
+                .attr('x2', '0%')
+                .attr('y2', '0%');
+            
+            MusicUniverseVisualization.VIRIDIS_COLORS.forEach((color, i) => {
+                gradient.append('stop')
+                    .attr('offset', `${(i / (MusicUniverseVisualization.VIRIDIS_COLORS.length - 1)) * 100}%`)
+                    .attr('stop-color', `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`);
+            });
+            
+            g.append('rect')
+                .attr('width', legendWidth)
+                .attr('height', legendHeight)
+                .style('fill', 'url(#viridis-gradient)')
+                .style('stroke', '#ccc')
+                .style('stroke-width', 1);
+            
+            axisGroup = g.append('g')
+                .attr('class', 'legend-axis')
+                .attr('transform', `translate(${legendWidth}, 0)`)
+                .style('font-size', '12px');
+            
+            titleText = g.append('text')
+                .attr('class', 'legend-title')
+                .attr('transform', `translate(70, ${legendHeight / 2}) rotate(90)`)
+                .style('text-anchor', 'middle')
+                .style('font-weight', 'bold')
+                .style('font-size', '14px');
+        } else {
+            g = svg.select('g');
+            axisGroup = g.select('.legend-axis');
+            titleText = g.select('.legend-title');
+        }
+        
+        // Rankings go from 1 (best) to 100 (worst)
+        // Display inverted so #1 is at top
+        const scale = d3.scaleLinear()
+            .domain([100, 1])
+            .range([legendHeight, 0]);
+        
+        const axis = d3.axisRight(scale)
+            .tickValues([1, 25, 50, 75, 100])
+            .tickFormat(d => `#${Math.round(d)}`);
+        
+        const transition = animate ? axisGroup.transition().duration(500).ease(d3.easeCubicInOut) : axisGroup;
+        transition.call(axis);
+        
+        titleText.text('Peak Rank');
+    }
+
+    /**
      * Update dimensions based on container size
      */
     updateDimensions() {
@@ -822,6 +1468,57 @@ class MusicUniverseVisualization {
                 genreSuggestions.style.display = 'none';
             }
         });
+        
+        // Billboard play button
+        const playButton = document.getElementById('play-timeline');
+        if (playButton) {
+            playButton.addEventListener('click', () => {
+                if (this.timelineIsPlaying) {
+                    this.pauseTimeline();
+                } else {
+                    this.playTimeline();
+                }
+            });
+        }
+        
+        // Billboard clear button
+        const clearBillboard = document.getElementById('clear-billboard');
+        
+        if (clearBillboard) {
+            clearBillboard.addEventListener('click', () => {
+                // Stop animation if playing
+                this.pauseTimeline();
+                
+                this.billboardMode = false;
+                this.selectedYear = null;
+                this.currentWeek = null;
+                clearBillboard.classList.add('hidden');
+                
+                // Reset timeline display
+                const yearEl = document.querySelector('#timeline-year-display .year');
+                const dateRangeEl = document.querySelector('#timeline-year-display .date-range');
+                if (yearEl) {
+                    yearEl.textContent = '—';
+                }
+                if (dateRangeEl) {
+                    dateRangeEl.textContent = 'No year selected';
+                }
+                
+                // Reset slider to start
+                const slider = document.getElementById('timeline-slider');
+                if (slider) {
+                    slider.style.left = '0%';
+                }
+                
+                // Re-enable color feature dropdown
+                dropdown.disabled = false;
+                dropdown.style.opacity = '1';
+                dropdown.style.cursor = 'pointer';
+                
+                // Reapply current color feature
+                this.updateColors(this.currentColorFeature, true);
+            });
+        }
         
         // Reset view button
         const resetButton = document.getElementById('reset-view');
