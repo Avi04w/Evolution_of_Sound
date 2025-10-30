@@ -242,7 +242,7 @@ class VisDNA {
         this.legendGroup.append("text")
             .attr("class", "feature-description")
             .attr("x", this.width / 2)
-            .attr("y", legendHeight + 28) // positioned under the legend
+            .attr("y", legendHeight + 35) // positioned under the legend
             .attr("text-anchor", "middle")
             .attr("font-size", "13px")
             .attr("fill", "#444")

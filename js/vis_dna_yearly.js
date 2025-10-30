@@ -121,7 +121,7 @@
             this.legendSubtitle = this.legendGroup.append("text")
                 .attr("class", "legend-subtitle")
                 .attr("x", legendWidth / 2)
-                .attr("y", legendHeight + 30)
+                .attr("y", legendHeight + 35)
                 .attr("text-anchor", "middle")
                 .attr("font-size", 12)
                 .attr("fill", "#555");
