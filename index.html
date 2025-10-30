@@ -49,6 +49,7 @@
             </p>
         </div>
         <div id="vis-dna" class="chart-space"></div>
+        <div id="vis-dna-yearly" class="chart-space" style="display: none"></div>
     </section>
 
     <!-- 🌍 Geographical Music Explorer -->
@@ -93,7 +94,36 @@
 <!-- JS Scripts -->
 <script src="js/vinyl_record.js"></script>
 <script src="js/vis_bubble.js"></script>
+<script src="js/vis_dna_yearly.js"></script>
 <script src="js/vis_dna.js"></script>
+<script>
+    function fadeOut(el, ms = 250) {
+        return new Promise((resolve) => {
+            el.style.opacity = 1;
+            el.style.transition = `opacity ${ms}ms ease`;
+            requestAnimationFrame(() => {
+                el.style.opacity = 0;
+                setTimeout(() => {
+                    el.style.display = "none";
+                    resolve();
+                }, ms);
+            });
+        });
+    }
+
+    function fadeIn(el, ms = 250, display = "block") {
+        return new Promise((resolve) => {
+            el.style.opacity = 0;
+            el.style.display = display;
+            el.style.transition = `opacity ${ms}ms ease`;
+            requestAnimationFrame(() => {
+                el.style.opacity = 1;
+                setTimeout(resolve, ms);
+            });
+        });
+    }
+</script>
+
 <script src="js/vis2.js"></script>
 <script>
     const dnaVis = new VisDNA("#vis-dna", { width: 1300, height: 360 });

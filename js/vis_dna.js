@@ -12,13 +12,14 @@ class VisDNA {
 
         // darker low-end colors for better contrast
         this.colorScales = {
-            acousticness: d3.scaleSequential(d3.interpolateRgb("#a2d2ff", "#133c55")),
-            danceability: d3.scaleSequential(d3.interpolateRgb("#f4a5c4", "#4b2e83")),
-            energy: d3.scaleSequential(d3.interpolateRgb("#ff7043", "#660000")),
-            liveness: d3.scaleSequential(d3.interpolateRgb("#a9dfbf", "#145a32")),
-            tempo: d3.scaleSequential(d3.interpolateRgb("#e63946", "#1e3a8a")), // blue (slow) → red (fast)
-            valence: d3.scaleSequential(d3.interpolateRgb("#ff9e9e", "#0b3c5d"))
+            acousticness: d3.scaleSequential(d3.interpolateRgb("#bde0ff", "#012b42")),
+            danceability: d3.scaleSequential(d3.interpolateRgb("#f4a5c4", "#230465")),
+            energy:       d3.scaleSequential(d3.interpolateRgb("#ff976c", "#651b00")),
+            liveness:     d3.scaleSequential(d3.interpolateRgb("#7affc7", "#064324")),
+            tempo:        d3.scaleSequential(d3.interpolateRgb("#5e0000", "#ffaaaa")), // blue(slow)->red(fast)
+            valence:      d3.scaleSequential(d3.interpolateRgb("#083957", "#c8c209")),
         };
+
 
         this.feature = "acousticness"; // default feature
         this.yearData = [];
@@ -52,8 +53,7 @@ class VisDNA {
         this.svg = d3.select(this.selector)
             .append("svg")
             .attr("width", this.width)
-            .attr("height", this.height)
-            .style("cursor", "crosshair");
+            .attr("height", this.height + 40);
 
         this.svg.append("rect")
             .attr("width", this.width)
@@ -84,17 +84,7 @@ class VisDNA {
         // legend under x-axis
         this.legendGroup = this.svg.append("g")
             .attr("class", "legend")
-            .attr("transform", `translate(${this.margin.left},${this.height - this.margin.bottom + 25})`);
-
-        // feature description text
-        this.descriptionText = this.svg.append("text")
-            .attr("class", "feature-description")
-            .attr("x", this.width / 2)
-            .attr("y", this.height - 25)
-            .attr("text-anchor", "middle")
-            .attr("font-size", "13px")
-            .attr("fill", "#444")
-            .text(this.featureDescriptions[this.feature]);
+            .attr("transform", `translate(${this.margin.left},${this.height - this.margin.bottom + 80})`);
 
         this.smoothMouseX = this.width / 2;
         this.mouseX = this.width / 2;
@@ -201,6 +191,17 @@ class VisDNA {
             .attr("dy", "1.2em")
             .style("font-size", "11px")
             .style("fill", "#555");
+
+        this.axisGroup.selectAll(".x-axis-label").remove();
+        const centerX = (this.margin.left + (this.width - this.margin.right)) / 2;
+        this.axisGroup.append("text")
+            .attr("class", "x-axis-label")
+            .attr("x", centerX)
+            .attr("y", 40) // positioned below tick labels
+            .attr("text-anchor", "middle")
+            .attr("font-size", "12px")
+            .attr("fill", "#333")
+            .text("Year");
     }
 
     createLegend() {
@@ -237,6 +238,16 @@ class VisDNA {
             .attr("class", "legend-axis")
             .attr("transform", `translate(0,${legendHeight})`);
 
+        // attach the feature description to the legendGroup so it moves with the legend
+        this.legendGroup.append("text")
+            .attr("class", "feature-description")
+            .attr("x", this.width / 2)
+            .attr("y", legendHeight + 28) // positioned under the legend
+            .attr("text-anchor", "middle")
+            .attr("font-size", "13px")
+            .attr("fill", "#444")
+            .text(this.featureDescriptions[this.feature]);
+
         this.updateLegend();
     }
 
@@ -264,7 +275,8 @@ class VisDNA {
     }
 
     updateDescription() {
-        this.descriptionText
+        // update the description attached to the legendGroup instead of an SVG-level text node
+        this.legendGroup.select(".feature-description")
             .text(this.featureDescriptions[this.feature])
             .attr("fill", "#444");
     }
@@ -314,6 +326,8 @@ class VisDNA {
                 this.hoveredIndex = i;
                 this.targetPhaseCenter = this.x(i);
 
+                d3.select(event.currentTarget).style("cursor", "pointer");
+
                 const val = yearObj[this.feature];
                 this.tooltip.transition().duration(100).style("opacity", 1);
                 this.tooltip.html(
@@ -323,20 +337,26 @@ class VisDNA {
                     .style("left", (event.pageX + 12) + "px")
                     .style("top", (event.pageY - 28) + "px");
             })
-                .on("mousemove", (event) => {
-                    // while hovering keep tooltip following and nudge the phase center target so motion feels anchored
-                    this.targetPhaseCenter = this.x(i);
-                    this.tooltip
-                        .style("left", (event.pageX + 12) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", () => {
-                    // stop focusing
-                    this.hoveredIndex = -1;
-                    // allow the regular mouse-based centering to take over (center to current mouse position)
-                    this.targetPhaseCenter = this.smoothMouseX;
-                    this.tooltip.transition().duration(150).style("opacity", 0);
-                });
+            .on("mousemove", (event) => {
+                // while hovering keep tooltip following and nudge the phase center target so motion feels anchored
+                this.targetPhaseCenter = this.x(i);
+                this.tooltip
+                    .style("left", (event.pageX + 12) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", () => {
+                // stop focusing
+                this.hoveredIndex = -1;
+                // allow the regular mouse-based centering to take over (center to current mouse position)
+                this.targetPhaseCenter = this.smoothMouseX;
+                this.tooltip.transition().duration(150).style("opacity", 0);
+
+                d3.select(event.currentTarget).style("cursor", "default");
+            })
+            hit.on("click", () => {
+                const year = this.yearData[i].year;
+                this.onBarClick(year);
+            });
         });
 
         cont.merge(enter).each((d, i, nodes) => {
@@ -430,4 +450,35 @@ class VisDNA {
         this.draw(data);
         requestAnimationFrame(() => this.animate());
     }
+
+    onBarClick(year) {
+        const dnaContainer = d3.select("#vis-dna");
+        const yearlyContainer = d3.select("#vis-dna-yearly");
+
+        // Hide DNA visualization smoothly
+        dnaContainer.transition()
+            .duration(500)
+            .style("opacity", 0)
+            .on("end", () => {
+                dnaContainer.style("display", "none");
+                yearlyContainer.style("display", "block")
+                    .style("opacity", 0);
+
+                // Clear previous yearly vis
+                yearlyContainer.selectAll("*").remove();
+
+                // Instantiate yearly visualization
+                const yearlyVis = new VisDNAYearly("#vis-dna-yearly", {
+                    width: 1100,
+                    height: 520,
+                    year: year,
+                    feature: this.feature
+                });
+
+                yearlyContainer.transition()
+                    .duration(600)
+                    .style("opacity", 1);
+            });
+    }
+
 }
