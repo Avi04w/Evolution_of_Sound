@@ -182,7 +182,7 @@ class BubblePlayerViz {
 
     this.activeBubble = d3.select(event.currentTarget)
       .attr("stroke", "#000")
-      .attr("stroke-width", 3)
+      .attr("stroke-width", 2)
       .attr("opacity", 1);
 
     if (d.Year === this.currentSongId && !this.recordPlayer.isPaused()) {
@@ -211,9 +211,8 @@ class BubblePlayerViz {
 
   startFloatingEffect() {
     const amplitude = Math.min(this.width, this.height) * 0.002;
-    const speed = 0.0015; // smaller = slower
+    const speed = 0.0015;
 
-    // Give each node a random phase offset so they move independently
     this.nodes.forEach(d => d._floatPhase = Math.random() * Math.PI * 2);
 
     const animate = () => {
@@ -237,14 +236,10 @@ document.addEventListener("DOMContentLoaded", () => {
   d3.csv("data/processed/top_hot_100_per_year.csv").then((data) => {
     const recordPlayer = new VinylRecord();
 
-    /**
-     * TODO Improve bubble graph
-     * 5. Update data for some songs
-     */
     new BubblePlayerViz({
       selector: "#bubble-viz",
       centerSelector: "#bubble-viz-container",
-      data: data.filter(d => d.Year >= 1980).toSorted((a, b) => b["Weeks in Charts"] - a["Weeks in Charts"]),
+      data: data.filter(d => d.Year >= 1980).reverse(),
       recordPlayer: recordPlayer,
     });
   });
