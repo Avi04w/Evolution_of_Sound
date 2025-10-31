@@ -10,11 +10,11 @@ class BubblePlayerViz {
 
     this.init();
     this.render();
-    this.attachResizeHandler();
+    // this.attachResizeHandler();
   }
 
   init() {
-    const size = Math.min(window.innerWidth, window.innerHeight) * 1.7;
+    const size = Math.min(window.innerWidth, window.innerHeight) * 1.3;
     this.width = size;
     this.height = size;
     this.tooltip = d3.select("#bubble-tooltip");
@@ -32,17 +32,21 @@ class BubblePlayerViz {
     ];
 
     this.simulation = d3.forceSimulation(this.nodes)
-      .force("charge", d3.forceManyBody().strength(-20))
+      .force("charge", d3.forceManyBody().strength(-0.01 * Math.min(this.width, this.height)))
       .force("center", d3.forceCenter(this.width / 2, this.height / 2))
       .force("collision", d3.forceCollide().radius(d => d["Weeks in Charts"]))
       .on("tick", () => this.ticked());
   }
 
   render() {
+    const radiusScale = d3.scaleLinear()
+      .domain([0, d3.max(this.data, d => +d["Weeks in Charts"])])
+      .range([5,  Math.min(this.width, this.height) * 0.09]);
+
     this.circles = this.svg.selectAll("circle")
       .data(this.nodes.filter(d => !d.isCenter), d => d.id)
       .join("circle")
-      .attr("r", d => d["Weeks in Charts"])
+      .attr("r", d => radiusScale(+d["Weeks in Charts"]))
       .attr("fill", d => {
         const patternId = `pattern-${d.Year}`;
         let defs = this.svg.select("defs");
@@ -99,7 +103,7 @@ class BubblePlayerViz {
     ];
 
     this.simulation = d3.forceSimulation(this.nodes)
-      .force("charge", d3.forceManyBody().strength(-10))
+      .force("charge", d3.forceManyBody().strength(-0.01 * Math.min(this.width, this.height)))
       .force("center", d3.forceCenter(this.width / 2, this.height / 2))
       .force("collision", d3.forceCollide().radius(d => d["Weeks in Charts"]))
       .on("tick", () => this.ticked());
@@ -128,7 +132,7 @@ class BubblePlayerViz {
     this.tooltip
       .style("opacity", 1)
       .html(`
-        <strong style="font-size: 1.5em;">${d.Song} - ${d.Artist}</strong><br>
+        <strong style="font-size: 1.4em;">${d.Song} - ${d.Artist}</strong><br>
         Charted Date: ${chartedDate} <br>
         Weeks charted: ${parseInt(d["Weeks in Charts"])} <br>
         Peak Position: ${d["Peak Position"]} <br>
@@ -194,8 +198,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /**
      * TODO Improve bubble graph
-     * 2. Fix border not highlighted on first bubble click bug
-     * 3. Make circle size dynamic
      * 4. Use exponential function to transform bubble size so the size is more varied
      * 5. Update data for some songs
      */
