@@ -284,7 +284,6 @@ class VisDNA {
     generateData(centerX) {
         const center = this.x.invert(centerX);
         const data = d3.range(this.numX).map((i) => {
-            // Add π/2 phase offset so the helix center aligns with cursor
             const t = (i - center) * this.torsion - this.scrollOffset + 2;
             const yearObj = this.yearData[i];
             const colorVal = this.colorScales[this.feature](yearObj[this.feature]);
