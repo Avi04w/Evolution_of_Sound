@@ -152,37 +152,39 @@
     </div>
 </div>
 
-<script src="js/vis_universe.js"></script>
+<script type="module" src="js/vis_universe.js"></script>
 
 <script>
-// Hide scroll hint on scroll or if already scrolled
+// Show/hide scroll hint based on scroll position
 (function() {
     const scrollHint = document.getElementById('scroll-hint');
+    let hideTimeout = null;
     
-    // Check initial scroll position on load
-    function checkScrollPosition() {
-        if (window.scrollY > 50 || document.documentElement.scrollTop > 50) {
+    function updateScrollHint() {
+        const scrollY = window.scrollY || document.documentElement.scrollTop;
+        
+        if (scrollY <= 50) {
+            // Near the top - show the hint
+            clearTimeout(hideTimeout);
+            scrollHint.style.display = 'block';
+            // Force reflow to restart animation
+            scrollHint.offsetHeight;
+            scrollHint.classList.remove('hide');
+        } else {
+            // Scrolled down - hide the hint
             scrollHint.classList.add('hide');
-            setTimeout(() => { scrollHint.style.display = 'none'; }, 500);
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                scrollHint.style.display = 'none';
+            }, 500);
         }
     }
     
-    // Hide on scroll
-    function hideOnScroll() {
-        scrollHint.classList.add('hide');
-        setTimeout(() => { scrollHint.style.display = 'none'; }, 500);
-        window.removeEventListener('scroll', hideOnScroll);
-        document.removeEventListener('wheel', hideOnScroll);
-        document.removeEventListener('touchmove', hideOnScroll);
-    }
-    
     // Check on page load
-    checkScrollPosition();
+    updateScrollHint();
     
-    // Add event listeners
-    window.addEventListener('scroll', hideOnScroll);
-    document.addEventListener('wheel', hideOnScroll);
-    document.addEventListener('touchmove', hideOnScroll);
+    // Update on scroll
+    window.addEventListener('scroll', updateScrollHint);
 })();
 </script>
 
