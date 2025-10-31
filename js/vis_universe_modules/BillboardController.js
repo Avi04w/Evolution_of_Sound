@@ -125,22 +125,27 @@ export class BillboardController {
         const puckWidthPercent = (oneYearInWeeks / (availableWeeks.length - 1)) * 100;
         slider.style.width = `${puckWidthPercent}%`;
         
-        // Create year labels
-        const yearRange = maxYear - minYear;
-        const labelStep = yearRange <= 10 ? 1 : yearRange <= 20 ? 2 : 5;
-        
+        // Create year labels - only show decades, centered on their tick positions
         labelsContainer.innerHTML = '';
-        for (let year = minYear; year <= maxYear; year += labelStep) {
-            const label = document.createElement('div');
-            label.textContent = year;
-            label.style.flex = '0 0 auto';
-            labelsContainer.appendChild(label);
-        }
         
-        if ((maxYear - minYear) % labelStep !== 0) {
-            const label = document.createElement('div');
-            label.textContent = maxYear;
-            labelsContainer.appendChild(label);
+        // Find first decade year (round up to nearest decade)
+        const firstDecade = Math.ceil(minYear / 10) * 10;
+        
+        // Create labels for each decade
+        for (let year = firstDecade; year <= maxYear; year += 10) {
+            const yearStart = `${year}-01-01`;
+            const weekIndex = availableWeeks.findIndex(week => week >= yearStart);
+            
+            if (weekIndex >= 0) {
+                const label = document.createElement('div');
+                // Format as '80s, '90s, etc.
+                const decadeLabel = `'${year.toString().slice(2)}s`;
+                label.textContent = decadeLabel;
+                label.style.position = 'absolute';
+                label.style.left = `${(weekIndex / (availableWeeks.length - 1)) * 100}%`;
+                label.style.transform = 'translateX(-50%)';
+                labelsContainer.appendChild(label);
+            }
         }
         
         // Timeline interaction
