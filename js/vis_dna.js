@@ -6,8 +6,24 @@ class VisDNA {
         this.margin = { top: 30, right: 40, bottom: 110, left: 50 };
 
         this.scrollOffset = 0;
+        this.autoSpinSpeed = 0; // auto-spin speed during animation
+        this.targetAutoSpinSpeed = 0;
+        this.autoSpinEasing = 0.05;
 
-        this.torsion = 0.3;
+        this.torsion = 0;
+        this.targetTorsion = 0; // for smooth torsion transitions
+        this.torsionEasing = 0.05; // speed of torsion animation
+        this.centerIndex = null; // index to center on (null = use right endpoint)
+        
+        // Color transition tracking
+        this.isTransitioning = false; // whether we're in a transition animation
+        this.transitionPhase = 0; // 0 = not started, 1 = twisting, 2 = untwisting
+        this.previousPhases = []; // track phase of each bar to detect when perpendicular
+        this.perpendicularCrossings = []; // count perpendicular crossings per bar
+        this.colorSwitched = []; // track which bars have switched colors
+        this.newFeature = null; // the feature we're transitioning to
+        this.maxTorsionReached = 0; // track the maximum torsion during phase 1
+        
         this.features = ["acousticness", "danceability", "energy", "liveness", "tempo", "valence"];
 
         // darker low-end colors for better contrast
@@ -58,24 +74,9 @@ class VisDNA {
         this.svg.append("rect")
             .attr("width", this.width)
             .attr("height", this.height)
-            .attr("fill", "white")
-            .on("mousemove", (event) => this.handleMouseMove(event))
-            .on("mouseleave", () => this.handleMouseLeave());
+            .attr("fill", "white");
 
         this.container = this.svg.append("g");
-
-        // Tooltip div
-        this.tooltip = d3.select(this.selector)
-            .append("div")
-            .attr("class", "dna-tooltip")
-            .style("position", "absolute")
-            .style("padding", "6px 10px")
-            .style("background", "rgba(0, 0, 0, 0.75)")
-            .style("color", "white")
-            .style("border-radius", "5px")
-            .style("font-size", "12px")
-            .style("pointer-events", "none")
-            .style("opacity", 0);
 
 
         this.axisGroup = this.svg.append("g")
@@ -110,16 +111,24 @@ class VisDNA {
             return year >= 1980 && !isNaN(year);
         });
 
-        // --- Group by year and compute yearly averages ---
+        // --- Group by year, keeping all song data for histograms ---
         const grouped = d3.rollups(
             filtered,
             v => ({
-                acousticness: d3.mean(v, d => d.acousticness),
-                danceability: d3.mean(v, d => d.danceability),
-                energy: d3.mean(v, d => d.energy),
-                liveness: d3.mean(v, d => d.liveness),
-                tempo: d3.mean(v, d => d.tempo),
-                valence: d3.mean(v, d => d.valence)
+                // Keep all individual values for histogram
+                acousticness: v.map(d => d.acousticness).filter(val => val != null),
+                danceability: v.map(d => d.danceability).filter(val => val != null),
+                energy: v.map(d => d.energy).filter(val => val != null),
+                liveness: v.map(d => d.liveness).filter(val => val != null),
+                tempo: v.map(d => d.tempo).filter(val => val != null),
+                valence: v.map(d => d.valence).filter(val => val != null),
+                // Also compute means for color scales
+                acousticness_mean: d3.mean(v, d => d.acousticness),
+                danceability_mean: d3.mean(v, d => d.danceability),
+                energy_mean: d3.mean(v, d => d.energy),
+                liveness_mean: d3.mean(v, d => d.liveness),
+                tempo_mean: d3.mean(v, d => d.tempo),
+                valence_mean: d3.mean(v, d => d.valence)
             }),
             d => new Date(d.date).getFullYear()
         );
@@ -138,7 +147,6 @@ class VisDNA {
         this.createDropdown();
         this.setColorScales();
         this.drawXAxis();
-        this.createLegend();
         this.animate();
     }
 
@@ -167,10 +175,11 @@ class VisDNA {
             .style("box-shadow", "0 2px 4px rgba(0,0,0,0.05)")
             .style("cursor", "pointer")
             .on("change", (event) => {
-                this.feature = event.target.value;
-                this.setColorScales();
-                this.updateLegend();
-                this.updateDescription();
+                const newFeature = event.target.value;
+                if (newFeature !== this.feature) {
+                    // Start the full transition animation with the selected feature
+                    this.startFullTransition(newFeature);
+                }
             });
 
         dropdown.selectAll("option")
@@ -183,7 +192,7 @@ class VisDNA {
     }
 
     setColorScales() {
-        const vals = this.yearData.map(d => d[this.feature]);
+        const vals = this.yearData.map(d => d[this.feature + '_mean']);
         const [min, max] = d3.extent(vals);
         this.colorScales[this.feature].domain([min, max]);
     }
@@ -216,92 +225,82 @@ class VisDNA {
             .text("Year");
     }
 
-    createLegend() {
-        const legendWidth = this.width - this.margin.left - this.margin.right;
-        const legendHeight = 10;
 
-        this.legendScale = d3.scaleLinear().range([0, legendWidth]);
-        this.legendAxis = d3.axisBottom(this.legendScale)
-            .ticks(5)
-            .tickFormat(d3.format(".2f"));
-
-        this.svg.append("defs")
-            .append("linearGradient")
-            .attr("id", "legend-gradient-horizontal")
-            .attr("x1", "0%").attr("y1", "0%")
-            .attr("x2", "100%").attr("y2", "0%");
-
-        this.legendGroup.append("text")
-            .attr("class", "legend-title")
-            .attr("x", legendWidth / 2)
-            .attr("y", -10)
-            .attr("text-anchor", "middle")
-            .attr("font-size", "12px")
-            .attr("fill", "#333")
-            .text(this.feature.charAt(0).toUpperCase() + this.feature.slice(1));
-
-        this.legendGroup.append("rect")
-            .attr("class", "legend-rect")
-            .attr("width", legendWidth)
-            .attr("height", legendHeight)
-            .attr("fill", "url(#legend-gradient-horizontal)");
-
-        this.legendGroup.append("g")
-            .attr("class", "legend-axis")
-            .attr("transform", `translate(0,${legendHeight})`);
-
-        // attach the feature description to the legendGroup so it moves with the legend
-        this.legendGroup.append("text")
-            .attr("class", "feature-description")
-            .attr("x", this.width / 2)
-            .attr("y", legendHeight + 35) // positioned under the legend
-            .attr("text-anchor", "middle")
-            .attr("font-size", "13px")
-            .attr("fill", "#444")
-            .text(this.featureDescriptions[this.feature]);
-
-        this.updateLegend();
-    }
-
-    updateLegend() {
-        const vals = this.yearData.map(d => d[this.feature]);
-        const [min, max] = d3.extent(vals);
-        this.legendScale.domain([min, max]);
-
-        const gradient = d3.select("#legend-gradient-horizontal");
-        const scale = this.colorScales[this.feature];
-        const stops = d3.range(0, 1.01, 0.1);
-
-        gradient.selectAll("stop").remove();
-        gradient.selectAll("stop")
-            .data(stops)
-            .enter()
-            .append("stop")
-            .attr("offset", d => `${d * 100}%`)
-            .attr("stop-color", d => scale(min + d * (max - min)));
-
-        this.legendGroup.select(".legend-axis").call(this.legendAxis);
-        this.legendGroup.select(".legend-title").text(
-            this.feature.charAt(0).toUpperCase() + this.feature.slice(1)
-        );
-    }
-
-    updateDescription() {
-        // update the description attached to the legendGroup instead of an SVG-level text node
-        this.legendGroup.select(".feature-description")
-            .text(this.featureDescriptions[this.feature])
-            .attr("fill", "#444");
-    }
 
     generateData(centerX) {
         const center = this.x.invert(centerX);
+        
+        // Static state: when not transitioning and torsion is 0, use fixed positions
+        const isStaticState = !this.isTransitioning && Math.abs(this.torsion) < 0.001;
+        
         const data = d3.range(this.numX).map((i) => {
-            const t = (i - center) * this.torsion - this.scrollOffset;
             const yearObj = this.yearData[i];
-            const colorVal = this.colorScales[this.feature](yearObj[this.feature]);
+            
+            let y1, z1, y2, z2;
+            
+            if (isStaticState) {
+                // Static state: fixed vertical bars with medium-sized dots
+                // Top dot at y=0.6, bottom dot at y=-0.6 (medium height)
+                // z=0 (no depth, all in same plane)
+                y1 = 0.6;
+                z1 = 0;
+                y2 = -0.6;
+                z2 = 0;
+            } else {
+                // Dynamic state: normal helix calculation
+                const t = (i - center) * this.torsion - this.scrollOffset;
+                
+                // Track perpendicular detection during transition (both phases)
+                if (this.isTransitioning && !this.colorSwitched[i]) {
+                    const prevT = this.previousPhases[i] !== undefined ? this.previousPhases[i] : t;
+                    const currentCos = Math.cos(t);
+                    const prevCos = Math.cos(prevT);
+                    
+                    // Detect perpendicular crossing: when cos changes sign (crosses zero)
+                    const isPerpendicularCrossing = prevCos !== 0 && currentCos !== 0 && 
+                                                   Math.sign(currentCos) !== Math.sign(prevCos);
+                    
+                    if (isPerpendicularCrossing) {
+                        // Count crossings across BOTH phases
+                        this.perpendicularCrossings[i] = (this.perpendicularCrossings[i] || 0) + 1;
+                        
+                        // Switch on the 3rd crossing (total across both phases)
+                        if (this.perpendicularCrossings[i] === 3) {
+                            this.colorSwitched[i] = true;
+                        }
+                    }
+                }
+                
+                this.previousPhases[i] = t;
+                
+                y1 = Math.cos(t);
+                z1 = Math.sin(t);
+                y2 = Math.cos(t - Math.PI);
+                z2 = Math.sin(t - Math.PI);
+                
+                // Smoothly interpolate z values to 0 as torsion approaches 0
+                // This prevents visual jumps at the end of the transition
+                if (this.isTransitioning && this.transitionPhase === 2) {
+                    // Calculate how close we are to completion (0 = just started phase 2, 1 = complete)
+                    const progress = 1 - (this.torsion / 0.2299);
+                    // Apply stronger dampening as we get closer to the end
+                    const dampening = Math.pow(progress, 2); // quadratic easing
+                    z1 *= (1 - dampening);
+                    z2 *= (1 - dampening);
+                }
+            }
+            
+            // Determine which feature to use for color
+            let featureToUse = this.feature;
+            if (this.isTransitioning && this.colorSwitched[i]) {
+                featureToUse = this.newFeature;
+            }
+            
+            const colorVal = this.colorScales[featureToUse](yearObj[featureToUse]);
+            
             return [
-                { x: i, y: Math.cos(t), z: Math.sin(t), color: colorVal },
-                { x: i, y: Math.cos(t - Math.PI), z: Math.sin(t - Math.PI), color: colorVal }
+                { x: i, y: y1, z: z1, color: colorVal, index: i },
+                { x: i, y: y2, z: z2, color: colorVal, index: i }
             ];
         });
 
@@ -324,54 +323,11 @@ class VisDNA {
                 .enter()
                 .append("circle");
             g.append("line").attr("stroke-width", 3.5);
-
-            // invisible hitbox for better tooltip area — bind handlers once here
-            const hit = g.append("rect")
-                .attr("class", "hitbox")
-                .attr("fill", "transparent")
-                .attr("pointer-events", "all");
-
-            // capture index i and yearObj for tooltip and focus
-            const yearObj = this.yearData[i];
-            hit.on("mouseover", (event) => {
-                // start focusing this bar
-                this.hoveredIndex = i;
-                this.targetPhaseCenter = this.x(i);
-
-                d3.select(event.currentTarget).style("cursor", "pointer");
-
-                const val = yearObj[this.feature];
-                this.tooltip.transition().duration(100).style("opacity", 1);
-                this.tooltip.html(
-                    `<strong>Year:</strong> ${yearObj.year}<br>
-                     <strong>${this.feature.charAt(0).toUpperCase() + this.feature.slice(1)}:</strong> ${val.toFixed(3)}`
-                )
-                    .style("left", (event.pageX + 12) + "px")
-                    .style("top", (event.pageY - 28) + "px");
-            })
-            .on("mousemove", (event) => {
-                // update mouseX to keep the animation flowing
-                const [x] = d3.pointer(event, this.svg.node());
-                this.mouseX = Math.max(0, Math.min(this.width, x));
-
-                // update tooltip position
-                this.tooltip
-                    .style("left", (event.pageX + 12) + "px")
-                    .style("top", (event.pageY - 28) + "px");
-            })
-            .on("mouseout", () => {
-                // stop focusing
-                this.hoveredIndex = -1;
-                // allow the regular mouse-based centering to take over (center to current mouse position)
-                this.targetPhaseCenter = this.smoothMouseX;
-                this.tooltip.transition().duration(150).style("opacity", 0);
-
-                d3.select(event.currentTarget).style("cursor", "default");
-            })
-            hit.on("click", () => {
-                const year = this.yearData[i].year;
-                this.onBarClick(year);
-            });
+            // Add histogram shading path
+            g.append("path")
+                .attr("class", "histogram-shade")
+                .attr("fill", "currentColor")
+                .attr("opacity", 0.3);
         });
 
         cont.merge(enter).each((d, i, nodes) => {
@@ -379,9 +335,27 @@ class VisDNA {
             const inverted = (d[0].y < d[1].y) ? 1 : -1;
             const color = d[0].color;
             const xPos = this.x(d[0].x);
+            const yearIndex = d[0].index;
 
             // focus factor for this bar (0..1)
             const f = this.focus[i] || 0;
+
+            // Determine which feature to use for dots
+            let featureForDots = this.feature;
+            if (this.isTransitioning && this.colorSwitched[yearIndex]) {
+                featureForDots = this.newFeature;
+            }
+            
+            // Map features to their dark colors for dots
+            const darkColors = {
+                acousticness: "#012b42",
+                danceability: "#230465",
+                energy: "#651b00",
+                liveness: "#003e1f",
+                tempo: "#5e0000",
+                valence: "#083957"
+            };
+            const dotColor = darkColors[featureForDots];
 
             // Update circles (dots)
             g.selectAll("circle")
@@ -390,50 +364,160 @@ class VisDNA {
                 .attr("cy", d => this.y(d.y))
                 // do NOT change radius based on focus — keep color scales visible
                 .attr("r", d => this.z(d.z))
-                .attr("fill", color)
+                .attr("fill", dotColor)
                 // show colors fully (no distance-based dimming)
                 .attr("fill-opacity", 1);
 
             // Update connecting line (bar)
-            // compute base endpoints
-            const baseYTop = this.y(d[1].y) + inverted * this.z(d[1].z);
-            const baseYBottom = this.y(d[0].y) - inverted * this.z(d[0].z);
-            // target endpoints for a fully centered (vertical) helix at this index
-            const targetYTop = this.y(1) + inverted * this.z(d[1].z);
-            const targetYBottom = this.y(-1) - inverted * this.z(d[0].z);
-
-            // blend endpoints towards target based on focus factor for smooth verticalization
-            const lerp = (a, b, t) => a + (b - a) * t;
-            const yTop = this.y(d[1].y) + inverted * this.z(d[1].z);
-            const yBottom = this.y(d[0].y) - inverted * this.z(d[0].z);
+            const y1 = this.y(d[1].y) + inverted * this.z(d[1].z);
+            const y2 = this.y(d[0].y) - inverted * this.z(d[0].z);
+            
+            // Determine which is actually top (smaller y value) and bottom (larger y value)
+            const yTop = Math.min(y1, y2);
+            const yBottom = Math.max(y1, y2);
 
             g.select("line")
                 .attr("x1", xPos)
                 .attr("x2", xPos)
-                .attr("y1", yTop)
-                .attr("y2", yBottom)
+                .attr("y1", y1)
+                .attr("y2", y2)
                 .attr("stroke", color)
                 .attr("stroke-width", 3.5)
                 .attr("opacity", 1);
 
-            // --- Invisible hitbox for tooltip interaction (position only) ---
-            g.select(".hitbox")
-                .attr("x", xPos - 6) // small width on either side
-                .attr("y", this.margin.top)
-                .attr("width", 12)   // hover area width (tweak if needed)
-                .attr("height", this.height - this.margin.bottom - this.margin.top);
+            // Generate and update histogram shading
+            const histogramPath = this.generateHistogramPath(yearIndex, xPos, yTop, yBottom);
+            
+            // Use the lighter color from the feature's color scale for violin
+            let featureForViolin = this.feature;
+            if (this.isTransitioning && this.colorSwitched[yearIndex]) {
+                featureForViolin = this.newFeature;
+            }
+            
+            // Map features to their light colors (first color in each gradient)
+            const lightColors = {
+                acousticness: "#d5e9ff",
+                danceability: "#ffc7de",
+                energy: "#fbc4af",
+                liveness: "#b3ffc3",
+                tempo: "#ffabab",
+                valence: "#c8c209"
+            };
+            const violinColor = darkColors[featureForViolin];
+            
+            g.select(".histogram-shade")
+                .attr("d", histogramPath)
+                .attr("fill", violinColor)
+                .attr("opacity", 0.6);
         });
     }
 
+    generateHistogramPath(yearIndex, xPos, yTop, yBottom) {
+        // Get feature data for this year
+        const yearObj = this.yearData[yearIndex];
+        let featureToUse = this.feature;
+        if (this.isTransitioning && this.colorSwitched[yearIndex]) {
+            featureToUse = this.newFeature;
+        }
+        
+        const values = yearObj[featureToUse];
+        if (!values || values.length === 0) {
+            // Return empty path if no data
+            return "";
+        }
 
-    handleMouseMove(event) {
-        const [x] = d3.pointer(event);
-        this.mouseX = Math.max(0, Math.min(this.width, x));
+        // Create histogram bins
+        const numBins = 20;
+        const [minVal, maxVal] = d3.extent(values);
+        const binWidth = (maxVal - minVal) / numBins;
+        
+        // Count values in each bin
+        const bins = new Array(numBins).fill(0);
+        values.forEach(val => {
+            const binIndex = Math.min(Math.floor((val - minVal) / binWidth), numBins - 1);
+            bins[binIndex]++;
+        });
+        
+        // Apply Gaussian smoothing to bins for violin-like appearance
+        const smoothBins = this.smoothBins(bins, 2);
+        
+        // Normalize to max width
+        const maxCount = d3.max(smoothBins);
+        const maxWidth = 15; // maximum width in pixels
+        
+        // Generate smooth path points
+        // Note: yTop has smaller pixel value (higher on screen), yBottom has larger pixel value (lower on screen)
+        const height = yBottom - yTop; // positive value
+        const binHeight = height / numBins;
+        
+        // Create smooth points for right side
+        const rightPoints = [];
+        for (let i = 0; i < numBins; i++) {
+            const y = yTop + (i + 0.5) * binHeight; // center of bin
+            const width = (smoothBins[i] / maxCount) * maxWidth;
+            rightPoints.push([xPos + width, y]);
+        }
+        
+        // Create smooth points for left side (mirror)
+        const leftPoints = [];
+        for (let i = numBins - 1; i >= 0; i--) {
+            const y = yTop + (i + 0.5) * binHeight; // center of bin
+            const width = (smoothBins[i] / maxCount) * maxWidth;
+            leftPoints.push([xPos - width, y]);
+        }
+        
+        // Build smooth path using curves
+        let path = `M${xPos},${yTop}`; // start at top center
+        
+        // Right side with smooth curves
+        for (let i = 0; i < rightPoints.length; i++) {
+            if (i === 0) {
+                path += ` L${rightPoints[i][0]},${rightPoints[i][1]}`;
+            } else {
+                // Use quadratic curves for smoothness
+                const prevPoint = rightPoints[i - 1];
+                const currPoint = rightPoints[i];
+                const controlY = (prevPoint[1] + currPoint[1]) / 2;
+                path += ` Q${prevPoint[0]},${controlY} ${currPoint[0]},${currPoint[1]}`;
+            }
+        }
+        
+        path += ` L${xPos},${yBottom}`; // to bottom center
+        
+        // Left side with smooth curves
+        for (let i = 0; i < leftPoints.length; i++) {
+            if (i === 0) {
+                path += ` L${leftPoints[i][0]},${leftPoints[i][1]}`;
+            } else {
+                // Use quadratic curves for smoothness
+                const prevPoint = leftPoints[i - 1];
+                const currPoint = leftPoints[i];
+                const controlY = (prevPoint[1] + currPoint[1]) / 2;
+                path += ` Q${prevPoint[0]},${controlY} ${currPoint[0]},${currPoint[1]}`;
+            }
+        }
+        
+        path += " Z"; // close path
+        return path;
     }
 
-    handleMouseLeave() {
-        this.mouseX = this.width / 2;
+    smoothBins(bins, radius) {
+        // Apply Gaussian smoothing to histogram bins
+        const smoothed = new Array(bins.length).fill(0);
+        for (let i = 0; i < bins.length; i++) {
+            let sum = 0;
+            let weightSum = 0;
+            for (let j = Math.max(0, i - radius); j <= Math.min(bins.length - 1, i + radius); j++) {
+                const distance = Math.abs(i - j);
+                const weight = Math.exp(-distance * distance / (2 * radius * radius));
+                sum += bins[j] * weight;
+                weightSum += weight;
+            }
+            smoothed[i] = sum / weightSum;
+        }
+        return smoothed;
     }
+
 
     animate() {
         if (this.yearData.length === 0) {
@@ -441,29 +525,155 @@ class VisDNA {
             return;
         }
 
-        // Smooth mouse follow when not explicitly focusing on a bar
-        this.smoothMouseX += (this.mouseX - this.smoothMouseX) * this.easing;
-
-        // If a bar is hovered, drive phaseCenter toward that bar's x; otherwise follow mouse
-        if (this.hoveredIndex >= 0) {
-            // stronger/ faster easing when focusing on a bar so the helix snaps smoothly to it
-            this.phaseCenter += (this.targetPhaseCenter - this.phaseCenter) * (this.phaseEasing * 2.0);
-        } else {
-            // normal behavior
-            this.phaseCenter += (this.smoothMouseX - this.phaseCenter) * this.phaseEasing;
-            // keep targetPhaseCenter in sync so on mouseout we can smoothly return
-            this.targetPhaseCenter = this.smoothMouseX;
+        // Smoothly interpolate torsion towards target
+        this.torsion += (this.targetTorsion - this.torsion) * this.torsionEasing;
+        
+        // Check if transition phase should advance
+        if (this.isTransitioning) {
+            const epsilon = 0.001; // tolerance for "reached target"
+            if (this.transitionPhase === 1 && Math.abs(this.torsion - this.targetTorsion) < epsilon) {
+                // Phase 1 complete (twisted to 0.5), start phase 2 (untwist to 0)
+                console.log("Phase 1 complete, starting untwist");
+                this.transitionPhase = 2;
+                this.centerIndex = 0; // switch to left endpoint
+                this.targetTorsion = 0;
+            } else if (this.transitionPhase === 2 && Math.abs(this.torsion - this.targetTorsion) < epsilon) {
+                // Phase 2 complete (untwisted to 0)
+                console.log("Transition complete!");
+                
+                this.isTransitioning = false;
+                this.transitionPhase = 0;
+                this.feature = this.newFeature; // commit the feature change
+                
+                // Stop spinning and reset animation state
+                this.targetAutoSpinSpeed = 0;
+                this.autoSpinSpeed = 0;
+                this.torsion = 0; // force torsion to exactly 0
+                this.targetTorsion = 0;
+                // Don't reset scrollOffset or centerIndex to avoid snapping
+                // When torsion is 0, all bars are at the same phase regardless of center
+                
+                // Smooth transition to static state with D3 animation
+                this.transitionToStaticState();
+            }
+        }
+        
+        // Smoothly interpolate auto-spin speed
+        this.autoSpinSpeed += (this.targetAutoSpinSpeed - this.autoSpinSpeed) * this.autoSpinEasing;
+        
+        // Apply auto-spin to scrollOffset (only if torsion is non-zero or transitioning)
+        if (this.isTransitioning || Math.abs(this.torsion) > 0.001) {
+            this.scrollOffset += this.autoSpinSpeed;
         }
 
-        // animate focus array toward 1 for hovered index and 0 for others
-        for (let i = 0; i < this.focus.length; i++) {
-            const target = (i === this.hoveredIndex) ? 1 : 0;
-            this.focus[i] += (target - (this.focus[i] || 0)) * this.focusEasing;
+        // Set phase center based on centerIndex
+        if (this.centerIndex !== null) {
+            this.phaseCenter = this.x(this.centerIndex);
+        } else {
+            this.phaseCenter = this.x(this.numX - 1); // default to rightmost endpoint
         }
 
         const data = this.generateData(this.phaseCenter);
         this.draw(data);
         requestAnimationFrame(() => this.animate());
+    }
+
+    testAnimationStep2() {
+        // Step 2: Increase torsion to 0.3448 and start spinning
+        // Center on right endpoint (index 41, year 2021) which is naturally vertical at this torsion
+        this.centerIndex = this.numX - 1; // right endpoint
+        this.targetTorsion = 0.3831;
+        // this.targetAutoSpinSpeed = 0.00; // adjust for desired spin speed
+        console.log("Animation Step 2: Twisting to 0.3831, centered on right (naturally vertical)");
+    }
+
+    testAnimationUnwind() {
+        // Unwind: Decrease torsion back to 0
+        // Center on left endpoint (index 0, year 1980) which is naturally vertical
+        this.centerIndex = 0; // left endpoint
+        this.targetTorsion = 0;
+        // this.targetAutoSpinSpeed = 0.00; // keep spinning during unwind
+        console.log("Animation Unwind: Unwinding to 0, centered on left (naturally vertical)");
+    }
+
+    // Helper method to find vertical bar positions for a given torsion
+    getVerticalIndices(torsion, centerIndex) {
+        // When centered at centerIndex, bars are vertical when:
+        // t = (i - centerIndex) * torsion = n * π
+        // So: i = centerIndex + (n * π / torsion)
+        const verticalIndices = [];
+        for (let n = -10; n <= 10; n++) {
+            const i = centerIndex + (n * Math.PI / torsion);
+            if (i >= 0 && i < this.numX) {
+                verticalIndices.push({
+                    index: i,
+                    roundedIndex: Math.round(i),
+                    year: this.yearData[Math.round(i)]?.year,
+                    rotation: n
+                });
+            }
+        }
+        return verticalIndices;
+    }
+
+    startFullTransition(targetFeature = null) {
+        // Start a full transition with color change
+        // If no target feature is provided, cycle to next feature
+        if (targetFeature) {
+            this.newFeature = targetFeature;
+        } else {
+            const currentIndex = this.features.indexOf(this.feature);
+            const nextIndex = (currentIndex + 1) % this.features.length;
+            this.newFeature = this.features[nextIndex];
+        }
+        
+        console.log(`Starting full transition from ${this.feature} to ${this.newFeature}`);
+        
+        // Initialize transition state
+        this.isTransitioning = true;
+        this.transitionPhase = 1;
+        this.colorSwitched = new Array(this.numX).fill(false);
+        this.previousPhases = new Array(this.numX).fill(undefined);
+        this.perpendicularCrossings = new Array(this.numX).fill(0);
+        this.maxTorsionReached = 0;
+        
+        // Make sure new feature color scale is set up
+        const vals = this.yearData.map(d => d[this.newFeature + '_mean']);
+        const [min, max] = d3.extent(vals);
+        this.colorScales[this.newFeature].domain([min, max]);
+        
+        // Phase 1: Twist to 0.2299, centered on right (leftmost bar stays upright)
+        this.centerIndex = this.numX - 1; // right endpoint
+        this.targetTorsion = 0.2299;
+        // this.targetAutoSpinSpeed = 0.02; // spin during transition
+    }
+
+    transitionToStaticState() {
+        // Smoothly animate all circles to the static state positions
+        const staticY1 = this.y(0.6);
+        const staticY2 = this.y(-0.6);
+        const staticR = this.z(0); // radius for z=0 (medium size)
+        
+        this.container.selectAll("g.helix-group").each((d, i, nodes) => {
+            const g = d3.select(nodes[i]);
+            const xPos = this.x(d[0].x);
+            
+            // Animate circles to static positions
+            g.selectAll("circle")
+                .transition()
+                .duration(500)
+                .ease(d3.easeQuadOut)
+                .attr("cy", (d, j) => j === 0 ? staticY1 : staticY2)
+                .attr("r", staticR);
+            
+            // Animate line to static positions
+            g.select("line")
+                .transition()
+                .duration(500)
+                .ease(d3.easeQuadOut)
+                .attr("y1", staticY1)
+                .attr("y2", staticY2);
+        });
     }
 
     onBarClick(year) {
