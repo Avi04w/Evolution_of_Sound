@@ -1,4 +1,5 @@
 <!-- ensure d3 v7 is loaded before this script -->
+
 const HEADER_H = 48;
 const CONFIG = {
   container: "#vis2",
@@ -116,8 +117,9 @@ const CONFIG = {
           .range(d3.schemeTableau10.concat(d3.schemeSet3));
 
       // zoom scales
+      const HEADER_PAD = 40;
       const x = d3.scaleLinear().range([0, W]);
-      const y = d3.scaleLinear().range([0, H]);
+      const y = d3.scaleLinear().range([HEADER_PAD, H]);
 
       // ----- mount -----
       mount.selectAll("*").remove();
@@ -184,81 +186,157 @@ const CONFIG = {
       let group = g.append("g").call(render, root);
 
       // ---------- render ----------
+      // ---------- render (drop-in) ----------
       function render(sel, current) {
         updateHeader(current);
 
+        // data = children + the "current" header band (for traverse-up)
         const nodes = sel.selectAll("g.node")
             .data(current.children ? current.children.concat(current) : [current], d => d.data.name)
-            .join("g")
-            .attr("class", "node")
-            .style("cursor", d => (d === current ? (d.parent ? "pointer" : "default") : (d.children ? "pointer" : "default")))
-            .on("click", (ev, d) => {
-              if (d === current) { if (d.parent) zoomOut(d); }
-              else if (d.children) { zoomIn(d); }
-            });
+            .join(
+                enter => {
+                  const g = enter.append("g")
+                      .attr("class", "node")
+                      .attr("tabindex", 0)                     // a11y: allow keyboard focus
+                      .style("cursor", d => (d === current ? (d.parent ? "pointer" : "default") : (d.children ? "pointer" : "default")))
+                      .on("click", (ev, d) => {
+                        if (d === current) { if (d.parent) zoomOut(d); }
+                        else if (d.children) { zoomIn(d); }
+                      });
 
-        nodes.append("rect")
-            .attr("id", d => d.rectId = uidRect())
-            .attr("rx", 10).attr("ry", 10)
-            .attr("fill", d =>
-                d === current ? "transparent"
-                    : d.children ? "rgba(255,255,255,0.04)"
-                        : color(current.height === 1 ? d.parent.data.name : d.data.name)
-            )
-            .attr("stroke", cfg.stroke || "rgba(255,255,255,0.08)")
-            .attr("stroke-width", 1);
+                  // rect (visual handled by css .node-rect)
+                  g.append("rect")
+                      .attr("id", d => (d.rectId = uidRect()))
+                      .attr("class", "node-rect")             // <- key: css styles apply here
+                      .attr("fill", d =>
+                          d === current ? "transparent"
+                              : d.children ? "rgba(255,255,255,0.04)"
+                                  : color(current.height === 1 ? d.parent.data.name : d.data.name)
+                      )
+                      .attr("stroke", cfg.stroke || "rgba(255,255,255,0.08)")
+                      .attr("stroke-width", 1);
 
-        nodes.append("clipPath")
-            .attr("id", d => d.clipId = uidClip())
-            .append("use").attr("xlink:href", d => `#${d.rectId}`);
+                  // clip so labels stay inside rounded corners
+                  g.append("clipPath")
+                      .attr("id", d => (d.clipId = uidClip()))
+                      .append("use")
+                      .attr("xlink:href", d => `#${d.rectId}`);
 
-        const label = nodes.append("text")
-            .attr("clip-path", d => `url(#${d.clipId})`)
-            .style("pointer-events", "none");
+                  // separate text nodes so css can style main/sub labels
+                  const label = g.append("text")
+                      .attr("class", "node-label")
+                      .attr("clip-path", d => `url(#${d.clipId})`)
+                      .style("pointer-events", "none");
 
-        label.selectAll("tspan")
-            .data(d => {
-              if (d === current) return [breadcrumb(d)];
-              if (d.children) return [d.data.name, `${d.children.length} tracks`];
-              return [truncate(d.data.name, 26)];
-            })
-            .join("tspan")
-            .attr("x", 10)
-            .attr("y", (s, i) => i === 0 ? 18 : 32)
-            .attr("font-size", (s, i) => i === 0 ? 13 : 11)
-            .attr("fill", (s, i) => i ? "rgba(229,229,229,0.7)" : "#eaeaec")
-            .attr("font-weight", (s, i) => i ? 400 : 700)
-            .text(s => s);
+                  const sub = g.append("text")
+                      .attr("class", "node-sub")
+                      .attr("clip-path", d => `url(#${d.clipId})`)
+                      .style("pointer-events", "none");
 
-        // hover (using viewport coords for the body-level tooltip)
-        nodes
-            .on("mouseenter", (ev, d) => {
-              if (d === current) return;
-              tip.style("opacity", 1).html(tooltipHTML(d));
-            })
-            .on("mousemove", (ev) => {
-              tip.style("left", (ev.clientX + 14) + "px")
-                  .style("top",  (ev.clientY + 12) + "px");
-            })
-            .on("mouseleave", () => tip.style("opacity", 0));
+                  // initial label text content
+                  g.each(function (d) {
+                    const isHeader = d === current;
+                    const hasKids = !!d.children;
 
+                    const main = d3.select(this).select("text.node-label")
+                        .attr("x", 10).attr("y", 18)
+                        .text(() => {
+                          if (isHeader) return breadcrumb(d);
+                          if (hasKids) return d.data.name;
+                          return truncate(d.data.name, 26);
+                        });
+
+                    const subEl = d3.select(this).select("text.node-sub")
+                        .attr("x", 10).attr("y", 34)
+                        .text(() => {
+                          if (isHeader) return ""; // header band shows breadcrumb only
+                          if (hasKids) return `${d.children.length} tracks`;
+                          // leaf: show a simple metric if you have it
+                          const pop = d.data.popularity;
+                          return pop == null ? "" : `${pop}`;
+                        });
+                  });
+
+                  // hover: tooltip + sibling dimming
+                  g.on("mouseenter", function (ev, d) {
+                    if (d !== current) {
+                      svg.selectAll(".node").classed("node-dim", n => n !== d); // dim others
+                      tip.style("opacity", 1).html(tooltipHTML(d));
+                    }
+                  }).on("mousemove", (ev) => {
+                    tip.style("left", (ev.clientX + 14) + "px")
+                        .style("top",  (ev.clientY + 12) + "px");
+                  }).on("mouseleave", () => {
+                    svg.selectAll(".node").classed("node-dim", false);
+                    tip.style("opacity", 0);
+                  });
+
+                  // keyboard: enter/space to click
+                  g.on("keydown", (ev, d) => {
+                    if (ev.key === "Enter" || ev.key === " ") {
+                      ev.preventDefault();
+                      if (d === current) { if (d.parent) zoomOut(d); }
+                      else if (d.children) { zoomIn(d); }
+                    }
+                  });
+
+                  return g;
+                },
+                update => update
+                    .style("cursor", d => (d === current ? (d.parent ? "pointer" : "default") : (d.children ? "pointer" : "default")))
+                    .each(function (d) {
+                      // update text strings if the hierarchy changed
+                      const isHeader = d === current;
+                      const hasKids = !!d.children;
+
+                      d3.select(this).select("text.node-label")
+                          .text(() => {
+                            if (isHeader) return breadcrumb(d);
+                            if (hasKids) return d.data.name;
+                            return truncate(d.data.name, 26);
+                          });
+
+                      d3.select(this).select("text.node-sub")
+                          .text(() => {
+                            if (isHeader) return "";
+                            if (hasKids) return `${d.children.length} tracks`;
+                            const pop = d.data.popularity;
+                            return pop == null ? "" : `${pop}`;
+                          });
+                    }),
+                exit => exit.remove()
+            );
+
+        // lay out sizes/visibility
         sel.call(position, current);
       }
 
-      // position + size (and hide labels on tiny tiles)
+// ---------- position + label sizing (drop-in) ----------
       function position(sel, current) {
         sel.selectAll("g.node")
             .attr("transform", d => d === current
-                ? `translate(0, -${HEADER_H})`
+                ? `translate(0, -${HEADER_H})`                                  // header band
                 : `translate(${x(d.x0)}, ${y(d.y0)})`)
             .each(function (d) {
               const w = d === current ? W : x(d.x1) - x(d.x0);
               const h = d === current ? HEADER_H : y(d.y1) - y(d.y0);
-              d3.select(this).select("rect").attr("width", w).attr("height", h);
-              const show = w >= 110 && h >= 56;
-              d3.select(this).select("text").style("display", show ? null : "none");
+
+              // size rect
+              d3.select(this).select("rect.node-rect")
+                  .attr("width", Math.max(0, w))
+                  .attr("height", Math.max(0, h));
+
+              // show/hide labels based on tile size, and switch to small style
+              const tiny = w < 110 || h < 56;
+              d3.select(this).select("text.node-label")
+                  .style("display", tiny ? "none" : null)
+                  .classed("node-label--sm", w < 140 || h < 72);                 // softer threshold
+
+              d3.select(this).select("text.node-sub")
+                  .style("display", (tiny || d === current) ? "none" : null);
             });
       }
+
 
       function zoomIn(d) {
         const from = group.attr("pointer-events", "none");
@@ -284,7 +362,8 @@ const CONFIG = {
 
       // helpers
       function breadcrumb(d) {
-        return d.ancestors().reverse().map(n => n.data.name).join(" / ");
+        //return d.ancestors().reverse().map(n => n.data.name).join(" / ");
+        return
       }
 
       function updateHeader(d) {
