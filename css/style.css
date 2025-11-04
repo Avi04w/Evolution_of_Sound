@@ -60,7 +60,6 @@ main {
 /* --- Visualization containers --- */
 .chart-space {
     width: 100%;
-    max-width: 1400px;     /* your preferred width */
     margin: 0 auto;        /* center container horizontally */
     text-align: center;
 }
@@ -111,13 +110,7 @@ svg {
 
 
 /* --- Footer --- */
-footer {
-    text-align: center;
-    font-size: 0.9rem;
-    color: #777;
-    padding: 2rem 0;
-    border-top: 1px solid #eee;
-}
+
 /* === snap scrolling (final) === */
 html, body { height: 100%; margin: 0; }
 :root { scroll-behavior: smooth; }
@@ -153,3 +146,63 @@ html, body { height: 100%; margin: 0; }
 /*}*/
 
 /* keep your existing styles above as-is */
+
+/* Fixed Spotify widget at bottom-right */
+#spotify-player-container {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    gap: 8px;
+    pointer-events: auto;
+    padding: 6px;
+    background: transparent;
+    border-radius: 12px;
+}
+
+
+/* Hide button inside container */
+.spotify-hide-btn {
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+}
+
+/* Floating show button when hidden */
+#spotify-show-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 9999;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #1db954;
+    color: #fff;
+    border: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    #spotify-player-container { right: 8px; bottom: 8px; }
+    .spotify-embed { width: 260px; height: 72px; }
+    #spotify-show-btn { right: 8px; bottom: 8px; }
+}
