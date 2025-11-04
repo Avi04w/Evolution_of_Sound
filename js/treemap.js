@@ -142,7 +142,7 @@
         const svg = scroller.append("svg")
             .attr("viewBox", [0, 0, W, H + HEADER_H])
             .attr("width", "100%")
-            .attr("height", H + HEADER_H)
+            .attr("height", H)
             .style("display", "block")
             .style("background", cfg.card || "#111214")
             .style("border", "1px solid #212329")
