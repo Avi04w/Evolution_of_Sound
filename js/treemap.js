@@ -10,19 +10,19 @@
 
     // inject a tiny css rule for blackout if not present
     (function ensureBlackoutCSS() {
-        const id = "vis2-blackout-style";
+        const id = "treemap-blackout-style";
         if (!document.getElementById(id)) {
             const style = document.createElement("style");
             style.id = id;
             style.textContent = `
-        #vis2 .node--blackout > rect { fill: #000 !important; transition: fill 120ms linear; }
+        #treemap .node--blackout > rect { fill: #000 !important; transition: fill 120ms linear; }
       `;
             document.head.appendChild(style);
         }
     })();
 
     const CONFIG = {
-        container: "#vis2",
+        container: "#treemap",
         csvPath: "data/processed/temp_dataset.csv",
         width: 980,
         height: 620,
@@ -131,7 +131,7 @@
 
         // scroll wrapper
         const scroller = mount.append("div")
-            .attr("class", "vis2-scroll")
+            .attr("class", "treemap-scroll")
             .style("max-height", "68vh")
             .style("overflow-y", "auto")
             .style("overflow-x", "hidden")
@@ -150,9 +150,9 @@
             .style("box-shadow", "0 18px 48px rgba(0,0,0,0.5)");
 
         // tooltip on body (not clipped)
-        d3.select("#vis2-tip").remove();
+        d3.select("#treemap-tip").remove();
         const tip = d3.select(document.body).append("div")
-            .attr("id", "vis2-tip")
+            .attr("id", "treemap-tip")
             .style("position", "fixed")
             .style("pointer-events", "none")
             .style("background", "rgba(0,0,0,0.9)")
@@ -183,7 +183,7 @@
 
         // background rect: flips to black when zoomed in
         const bgRect = g.append("rect")
-            .attr("class", "vis2-bg")
+            .attr("class", "treemap-bg")
             .attr("x", 0)
             .attr("y", -HEADER_H) // also behind header for seamless look
             .attr("width", W)
@@ -373,7 +373,7 @@
             .style("gap", "10px");
 
         // card always exists (so we can measure once)
-        const card = wrap.append("div").attr("class", "vis2-card");
+        const card = wrap.append("div").attr("class", "treemap-card");
 
         // measure once
         const measure = () => {
@@ -393,12 +393,12 @@
             const title = d3.select(titleEl);
             title.html(""); // clear original
 
-            title.append("span").attr("class", "vis2-title-text").text("How Genres Defined ");
-            sel = title.append("select").attr("class", "vis2-year-select");
-            title.append("span").attr("class", "vis2-title-suffix").text(" ’s Music Scene");
+            title.append("span").attr("class", "treemap-title-text").text("How Genres Defined ");
+            sel = title.append("select").attr("class", "treemap-year-select");
+            title.append("span").attr("class", "treemap-title-suffix").text(" ’s Music Scene");
         } else {
             // simple fallback select above the card
-            sel = wrap.insert("select", ":first-child").attr("class", "vis2-year-select");
+            sel = wrap.insert("select", ":first-child").attr("class", "treemap-year-select");
         }
 
         // populate year options
