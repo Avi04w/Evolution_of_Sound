@@ -1,11 +1,26 @@
-import { feature, mesh } from 'https://cdn.jsdelivr.net/npm/topojson-client@3/+esm';
+import {
+  feature,
+  mesh,
+} from "https://cdn.jsdelivr.net/npm/topojson-client@3/+esm";
 
 const d3 = window.d3;
 
-const DATA_URL = '../data/processed/billboard_full.ndjson';
-const WORLD_URL = './data/world-110m.json';
-const START_DATE_STR = '1980-01-01';
-const IGNORED_CODES = new Set(['XW', 'XE', 'AF', 'EU', 'AS', 'OC', 'NA', 'SA', 'XX', 'ZZ', 'AQ']);
+const DATA_URL = "../data/processed/billboard_full.ndjson";
+const WORLD_URL = "./data/world-110m.json";
+const START_DATE_STR = "1980-01-01";
+const IGNORED_CODES = new Set([
+  "XW",
+  "XE",
+  "AF",
+  "EU",
+  "AS",
+  "OC",
+  "NA",
+  "SA",
+  "XX",
+  "ZZ",
+  "AQ",
+]);
 
 const TOP_METRICS_N = 100;
 const TOP_PIN_N = 10;
@@ -50,27 +65,27 @@ const ISO_TO_NUMERIC_ID = {
 
 const sparklineDefs = [
   {
-    key: 'nonUSShare',
-    label: 'Non-US Share',
+    key: "nonUSShare",
+    label: "Non-US Share",
     accessor: (metrics) => (metrics ? metrics.nonUSShare ?? null : null),
     formatter: (value) => formatPercent(value, 1),
-    stroke: '#3a6fd8',
+    stroke: "#3a6fd8",
     fixedDomain: [0, 1],
   },
   {
-    key: 'uniqueOrigins',
-    label: 'Unique Origins',
+    key: "uniqueOrigins",
+    label: "Unique Origins",
     accessor: (metrics) => (metrics ? metrics.uniqueOrigins ?? null : null),
     formatter: (value) => formatInteger(value),
-    stroke: '#1ca37a',
+    stroke: "#1ca37a",
     paddingRatio: 0.08,
   },
   {
-    key: 'entropy',
-    label: 'Shannon Entropy H',
+    key: "entropy",
+    label: "Shannon Entropy H",
     accessor: (metrics) => (metrics ? metrics.entropy ?? null : null),
     formatter: (value) => formatNumber(value, 2),
-    stroke: '#c25594',
+    stroke: "#c25594",
     paddingRatio: 0.12,
   },
 ];
@@ -131,8 +146,8 @@ let choroplethLayer = null;
 let choroplethSelection = null;
 let borderLayer = null;
 let pinLayer = null;
-let currentChoroplethMode = 'weekly-share';
-let currentPinColorMode = 'origin-region';
+let currentChoroplethMode = "weekly-share";
+let currentPinColorMode = "origin-region";
 let excludeUs = EXCLUDE_US;
 let topPinN = TOP_PIN_N;
 let windowWeeks = WINDOW_WEEKS;
@@ -140,105 +155,108 @@ let windowWeeks = WINDOW_WEEKS;
 const choroplethColorScale = d3
   .scaleSequential((t) => d3.interpolateBlues(0.15 + 0.85 * t))
   .domain([0, 1]);
-const neutralPinColor = '#444';
+const neutralPinColor = "#444";
 
 const regionColors = {
-  Africa: '#1f77b4',
-  Americas: '#ff7f0e',
-  Asia: '#2ca02c',
-  Europe: '#d62728',
-  Oceania: '#9467bd',
-  'Middle East': '#8c564b',
-  Other: '#7f7f7f',
+  Africa: "#1f77b4",
+  Americas: "#ff7f0e",
+  Asia: "#2ca02c",
+  Europe: "#d62728",
+  Oceania: "#9467bd",
+  "Middle East": "#8c564b",
+  Other: "#7f7f7f",
 };
 
 const regionMapping = {
-  US: 'Americas',
-  PR: 'Americas',
-  CA: 'Americas',
-  MX: 'Americas',
-  BR: 'Americas',
-  AR: 'Americas',
-  CL: 'Americas',
-  CO: 'Americas',
-  PE: 'Americas',
-  VE: 'Americas',
-  UY: 'Americas',
-  CR: 'Americas',
-  JM: 'Americas',
-  GB: 'Europe',
-  UK: 'Europe',
-  IE: 'Europe',
-  FR: 'Europe',
-  DE: 'Europe',
-  ES: 'Europe',
-  IT: 'Europe',
-  NL: 'Europe',
-  BE: 'Europe',
-  SE: 'Europe',
-  NO: 'Europe',
-  FI: 'Europe',
-  DK: 'Europe',
-  CH: 'Europe',
-  AT: 'Europe',
-  GR: 'Europe',
-  PT: 'Europe',
-  PL: 'Europe',
-  UA: 'Europe',
-  RU: 'Europe',
-  KR: 'Asia',
-  CN: 'Asia',
-  TW: 'Asia',
-  JP: 'Asia',
-  IN: 'Asia',
-  PK: 'Asia',
-  BD: 'Asia',
-  LK: 'Asia',
-  TH: 'Asia',
-  VN: 'Asia',
-  ID: 'Asia',
-  SG: 'Asia',
-  HK: 'Asia',
-  MY: 'Asia',
-  PH: 'Asia',
-  AU: 'Oceania',
-  NZ: 'Oceania',
-  SA: 'Middle East',
-  AE: 'Middle East',
-  QA: 'Middle East',
-  KW: 'Middle East',
-  BH: 'Middle East',
-  OM: 'Middle East',
-  IL: 'Middle East',
-  TR: 'Middle East',
-  ZA: 'Africa',
-  NG: 'Africa',
-  GH: 'Africa',
-  CI: 'Africa',
-  EG: 'Africa',
-  MA: 'Africa',
-  DZ: 'Africa',
-  TN: 'Africa',
-  ET: 'Africa',
-  KE: 'Africa',
-  SN: 'Africa',
+  US: "Americas",
+  PR: "Americas",
+  CA: "Americas",
+  MX: "Americas",
+  BR: "Americas",
+  AR: "Americas",
+  CL: "Americas",
+  CO: "Americas",
+  PE: "Americas",
+  VE: "Americas",
+  UY: "Americas",
+  CR: "Americas",
+  JM: "Americas",
+  GB: "Europe",
+  UK: "Europe",
+  IE: "Europe",
+  FR: "Europe",
+  DE: "Europe",
+  ES: "Europe",
+  IT: "Europe",
+  NL: "Europe",
+  BE: "Europe",
+  SE: "Europe",
+  NO: "Europe",
+  FI: "Europe",
+  DK: "Europe",
+  CH: "Europe",
+  AT: "Europe",
+  GR: "Europe",
+  PT: "Europe",
+  PL: "Europe",
+  UA: "Europe",
+  RU: "Europe",
+  KR: "Asia",
+  CN: "Asia",
+  TW: "Asia",
+  JP: "Asia",
+  IN: "Asia",
+  PK: "Asia",
+  BD: "Asia",
+  LK: "Asia",
+  TH: "Asia",
+  VN: "Asia",
+  ID: "Asia",
+  SG: "Asia",
+  HK: "Asia",
+  MY: "Asia",
+  PH: "Asia",
+  AU: "Oceania",
+  NZ: "Oceania",
+  SA: "Middle East",
+  AE: "Middle East",
+  QA: "Middle East",
+  KW: "Middle East",
+  BH: "Middle East",
+  OM: "Middle East",
+  IL: "Middle East",
+  TR: "Middle East",
+  ZA: "Africa",
+  NG: "Africa",
+  GH: "Africa",
+  CI: "Africa",
+  EG: "Africa",
+  MA: "Africa",
+  DZ: "Africa",
+  TN: "Africa",
+  ET: "Africa",
+  KE: "Africa",
+  SN: "Africa",
 };
 
 const superGenreOrder = [
-  'Pop',
-  'Hip-Hop/Rap',
-  'Rock/Metal',
-  'Electronic/Dance',
-  'R&B/Soul/Funk',
-  'Country/Folk/Americana',
-  'Latin',
-  'Reggae/Caribbean',
-  'Jazz/Blues',
-  'Other/Unknown',
+  "Pop",
+  "Hip-Hop/Rap",
+  "Rock/Metal",
+  "Electronic/Dance",
+  "R&B/Soul/Funk",
+  "Country/Folk/Americana",
+  "Latin",
+  "Reggae/Caribbean",
+  "Jazz/Blues",
+  "Other/Unknown",
 ];
 const superGenreScale = d3
-  .scaleOrdinal(superGenreOrder, d3.schemeTableau10.concat(['#999', '#c7a212', '#1f9393']))
-  .unknown('#888ba1');
+  .scaleOrdinal(
+    superGenreOrder,
+    d3.schemeTableau10.concat(["#999", "#c7a212", "#1f9393"])
+  )
+  .unknown("#888ba1");
 
 async function init() {
   try {
@@ -263,10 +281,10 @@ async function init() {
     configureTimeline();
     renderForWeek(currentWeekIndex);
 
-    console.log('Sample normalized rows:', rows.slice(0, 5));
-    console.log('First three weeks:', weeks.slice(0, 3));
+    console.log("Sample normalized rows:", rows.slice(0, 5));
+    console.log("First three weeks:", weeks.slice(0, 3));
     console.log(
-      'First three weekly metrics:',
+      "First three weekly metrics:",
       Array.from(metricsByWeekIndex.entries())
         .slice(0, 3)
         .map(([idx, metrics]) => ({ weekIndex: idx, metrics }))
@@ -274,25 +292,27 @@ async function init() {
 
     exposeForDebugging();
   } catch (error) {
-    console.error('Initialization failed:', error);
+    console.error("Initialization failed:", error);
   }
 }
 
 async function loadNdjson(url) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Failed to fetch NDJSON (${response.status}): ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch NDJSON (${response.status}): ${response.statusText}`
+    );
   }
   const text = await response.text();
   return text
-    .split('\n')
+    .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
       try {
         return JSON.parse(line);
       } catch (error) {
-        console.warn('Skipping invalid NDJSON line:', error);
+        console.warn("Skipping invalid NDJSON line:", error);
         return null;
       }
     })
@@ -302,7 +322,9 @@ async function loadNdjson(url) {
 async function loadWorldTopoJSON(url) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Failed to fetch world topology (${response.status}): ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch world topology (${response.status}): ${response.statusText}`
+    );
   }
   return response.json();
 }
@@ -317,26 +339,29 @@ function normalizeRows(rawRows) {
     const rank = Number(raw.rank);
     if (!Number.isFinite(rank) || rank < 1 || rank > 100) continue;
 
-    const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name : 'Unknown';
+    const name =
+      typeof raw.name === "string" && raw.name.trim() ? raw.name : "Unknown";
     const artists = Array.isArray(raw.artists)
-      ? raw.artists.filter((a) => typeof a === 'string' && a.trim())
-      : typeof raw.artist === 'string' && raw.artist.trim()
+      ? raw.artists.filter((a) => typeof a === "string" && a.trim())
+      : typeof raw.artist === "string" && raw.artist.trim()
       ? [raw.artist]
       : [];
 
     const genreCandidates = Array.isArray(raw.genres)
-      ? raw.genres.filter((g) => typeof g === 'string' && g.trim())
+      ? raw.genres.filter((g) => typeof g === "string" && g.trim())
       : [];
-    const genre = genreCandidates.length ? genreCandidates[0] : 'Unknown';
+    const genre = genreCandidates.length ? genreCandidates[0] : "Unknown";
 
     const originCandidates = Array.isArray(raw.country)
       ? raw.country
-      : typeof raw.country === 'string'
+      : typeof raw.country === "string"
       ? [raw.country]
       : [];
 
     const origins = originCandidates
-      .map((code) => (typeof code === 'string' ? code.trim().toUpperCase() : null))
+      .map((code) =>
+        typeof code === "string" ? code.trim().toUpperCase() : null
+      )
       .filter((code) => Boolean(code) && !IGNORED_CODES.has(code));
 
     const isoDate = date.toISOString().slice(0, 10);
@@ -390,7 +415,9 @@ function buildRowsByWeek() {
 
 function computeWeeklyMetrics() {
   const seenOrigins = new Set();
-  const sortedWeekIndices = Array.from(rowsByWeekIndex.keys()).sort((a, b) => a - b);
+  const sortedWeekIndices = Array.from(rowsByWeekIndex.keys()).sort(
+    (a, b) => a - b
+  );
 
   for (const idx of sortedWeekIndices) {
     const weekRows = rowsByWeekIndex.get(idx) ?? [];
@@ -425,13 +452,15 @@ function computeWeeklyMetrics() {
       }
     }
 
-    const usShare = normalizedShares.get('US') ?? 0;
+    const usShare = normalizedShares.get("US") ?? 0;
     const nonUSShare = totalWeight > 0 ? 1 - usShare : 0;
     const uniqueOrigins = normalizedShares.size;
     const entropy = computeShannonEntropy(normalizedShares);
 
     const collabRate =
-      topRows.length > 0 ? Math.round((collabCount / topRows.length) * 1000) / 10 : 0;
+      topRows.length > 0
+        ? Math.round((collabCount / topRows.length) * 1000) / 10
+        : 0;
 
     metricsByWeekIndex.set(idx, {
       nonUSShare,
@@ -452,7 +481,9 @@ function buildSparklineSeries() {
       const metrics = metricsByWeekIndex.get(idx) ?? null;
       const rawValue = def.accessor(metrics);
       const value =
-        typeof rawValue === 'number' && Number.isFinite(rawValue) ? rawValue : null;
+        typeof rawValue === "number" && Number.isFinite(rawValue)
+          ? rawValue
+          : null;
       return {
         weekIndex: idx,
         date,
@@ -506,20 +537,30 @@ function cacheDomReferences() {
   legendEl = document.querySelector('[data-role="map-legend"]');
   pinLegendEl = document.querySelector('[data-role="pin-legend"]');
   tooltipEl = document.querySelector('[data-role="map-tooltip"]');
-  mapContainerEl = document.querySelector('.map-container');
-  sparklineTooltipEl = document.querySelector('[data-role="sparkline-tooltip"]');
-  choroplethModeSelectEl = document.querySelector('[data-role="choropleth-mode"]');
+  mapContainerEl = document.querySelector(".map-container");
+  sparklineTooltipEl = document.querySelector(
+    '[data-role="sparkline-tooltip"]'
+  );
+  choroplethModeSelectEl = document.querySelector(
+    '[data-role="choropleth-mode"]'
+  );
   pinColorModeSelectEl = document.querySelector('[data-role="pin-color-mode"]');
   excludeUsCheckboxEl = document.querySelector('[data-role="exclude-us"]');
-  playbackSpeedSelectEl = document.querySelector('[data-role="playback-speed"]');
+  playbackSpeedSelectEl = document.querySelector(
+    '[data-role="playback-speed"]'
+  );
   topPinCountInputEl = document.querySelector('[data-role="top-pin-count"]');
   windowWeeksInputEl = document.querySelector('[data-role="window-weeks"]');
 
   statElements.nonUSShare = document.querySelector('[data-stat="nonUSShare"]');
-  statElements.uniqueOrigins = document.querySelector('[data-stat="uniqueOrigins"]');
+  statElements.uniqueOrigins = document.querySelector(
+    '[data-stat="uniqueOrigins"]'
+  );
   statElements.entropy = document.querySelector('[data-stat="entropy"]');
   statElements.collabRate = document.querySelector('[data-stat="collabRate"]');
-  statElements.cumulativeOrigins = document.querySelector('[data-stat="cumulativeOrigins"]');
+  statElements.cumulativeOrigins = document.querySelector(
+    '[data-stat="cumulativeOrigins"]'
+  );
 
   if (tooltipEl) {
     tooltipEl.hidden = true;
@@ -550,11 +591,11 @@ function cacheDomReferences() {
 
 function setupControls() {
   if (playPauseButtonEl) {
-    playPauseButtonEl.addEventListener('click', togglePlayback);
+    playPauseButtonEl.addEventListener("click", togglePlayback);
   }
 
   if (timelineRangeEl) {
-    timelineRangeEl.addEventListener('input', (event) => {
+    timelineRangeEl.addEventListener("input", (event) => {
       const requestedIndex = Number(event.target.value);
       pause();
       setWeekIndex(requestedIndex);
@@ -569,23 +610,25 @@ function setupControls() {
       isScrubbing = false;
     };
 
-    timelineRangeEl.addEventListener('pointerdown', handleScrubStart);
-    timelineRangeEl.addEventListener('pointerup', handleScrubEnd);
-    timelineRangeEl.addEventListener('touchstart', handleScrubStart, { passive: true });
-    timelineRangeEl.addEventListener('touchend', handleScrubEnd);
-    timelineRangeEl.addEventListener('mousedown', handleScrubStart);
-    timelineRangeEl.addEventListener('mouseup', handleScrubEnd);
+    timelineRangeEl.addEventListener("pointerdown", handleScrubStart);
+    timelineRangeEl.addEventListener("pointerup", handleScrubEnd);
+    timelineRangeEl.addEventListener("touchstart", handleScrubStart, {
+      passive: true,
+    });
+    timelineRangeEl.addEventListener("touchend", handleScrubEnd);
+    timelineRangeEl.addEventListener("mousedown", handleScrubStart);
+    timelineRangeEl.addEventListener("mouseup", handleScrubEnd);
   }
 
   if (choroplethModeSelectEl) {
-    choroplethModeSelectEl.addEventListener('change', (event) => {
+    choroplethModeSelectEl.addEventListener("change", (event) => {
       currentChoroplethMode = event.target.value;
       updateMapForWeek(currentWeekIndex);
     });
   }
 
   if (pinColorModeSelectEl) {
-    pinColorModeSelectEl.addEventListener('change', (event) => {
+    pinColorModeSelectEl.addEventListener("change", (event) => {
       currentPinColorMode = event.target.value;
       renderPinLegend();
       updatePinsForWeek(currentWeekIndex);
@@ -593,28 +636,30 @@ function setupControls() {
   }
 
   if (excludeUsCheckboxEl) {
-    excludeUsCheckboxEl.addEventListener('change', (event) => {
+    excludeUsCheckboxEl.addEventListener("change", (event) => {
       excludeUs = event.target.checked;
       updateMapForWeek(currentWeekIndex);
     });
   }
 
   if (playbackSpeedSelectEl) {
-    playbackSpeedSelectEl.addEventListener('change', (event) => {
+    playbackSpeedSelectEl.addEventListener("change", (event) => {
       updatePlaybackSpeed(event.target.value);
     });
   }
 
   if (topPinCountInputEl) {
-    const handleTopPinChange = () => updateTopPinCount(topPinCountInputEl.value);
-    topPinCountInputEl.addEventListener('change', handleTopPinChange);
-    topPinCountInputEl.addEventListener('input', handleTopPinChange);
+    const handleTopPinChange = () =>
+      updateTopPinCount(topPinCountInputEl.value);
+    topPinCountInputEl.addEventListener("change", handleTopPinChange);
+    topPinCountInputEl.addEventListener("input", handleTopPinChange);
   }
 
   if (windowWeeksInputEl) {
-    const handleWindowWeeksChange = () => updateWindowWeeks(windowWeeksInputEl.value);
-    windowWeeksInputEl.addEventListener('change', handleWindowWeeksChange);
-    windowWeeksInputEl.addEventListener('input', handleWindowWeeksChange);
+    const handleWindowWeeksChange = () =>
+      updateWindowWeeks(windowWeeksInputEl.value);
+    windowWeeksInputEl.addEventListener("change", handleWindowWeeksChange);
+    windowWeeksInputEl.addEventListener("input", handleWindowWeeksChange);
   }
 
   // TODO: Add keyboard controls (space to toggle, arrows to step through weeks).
@@ -705,7 +750,11 @@ function restartPlaybackTimer() {
 }
 
 function updatePlaybackSpeed(newSpeed) {
-  const next = clampNumber(Number(newSpeed) || DEFAULT_PLAYBACK_SPEED_MS, 50, 2000);
+  const next = clampNumber(
+    Number(newSpeed) || DEFAULT_PLAYBACK_SPEED_MS,
+    50,
+    2000
+  );
   playSpeedMs = next;
   if (playbackSpeedSelectEl) {
     playbackSpeedSelectEl.value = String(playSpeedMs);
@@ -718,7 +767,11 @@ function updatePlaybackSpeed(newSpeed) {
 
 function updateTopPinCount(newValue) {
   const rounded = Math.round(Number(newValue));
-  const next = clampNumber(Number.isFinite(rounded) ? rounded : TOP_PIN_N, 1, 50);
+  const next = clampNumber(
+    Number.isFinite(rounded) ? rounded : TOP_PIN_N,
+    1,
+    50
+  );
   topPinN = next;
   if (topPinCountInputEl) {
     topPinCountInputEl.value = String(topPinN);
@@ -730,7 +783,11 @@ function updateTopPinCount(newValue) {
 
 function updateWindowWeeks(newValue) {
   const rounded = Math.round(Number(newValue));
-  const next = clampNumber(Number.isFinite(rounded) ? rounded : WINDOW_WEEKS, 0, 26);
+  const next = clampNumber(
+    Number.isFinite(rounded) ? rounded : WINDOW_WEEKS,
+    0,
+    26
+  );
   windowWeeks = next;
   if (windowWeeksInputEl) {
     windowWeeksInputEl.value = String(windowWeeks);
@@ -741,7 +798,7 @@ function updateWindowWeeks(newValue) {
 
 function updatePlayButton() {
   if (!playPauseButtonEl) return;
-  playPauseButtonEl.textContent = isPlaying ? 'Pause' : 'Play';
+  playPauseButtonEl.textContent = isPlaying ? "Pause" : "Play";
 }
 
 function setWeekIndex(nextIndex) {
@@ -761,8 +818,8 @@ function renderForWeek(targetWeekIndex) {
   if (!timelineWeekLabelEl || !timelineWeekIndexEl) return;
 
   if (totalWeeks === 0) {
-    timelineWeekLabelEl.textContent = 'No data';
-    timelineWeekIndexEl.textContent = '0 / 0';
+    timelineWeekLabelEl.textContent = "No data";
+    timelineWeekIndexEl.textContent = "0 / 0";
     updateStatValues(null);
     updateSparklineReadouts(0);
     updateSparklineCursors(0);
@@ -789,43 +846,43 @@ function renderForWeek(targetWeekIndex) {
 }
 
 function updateStatValues(metrics) {
-  const hasMetrics = metrics !== null && typeof metrics === 'object';
+  const hasMetrics = metrics !== null && typeof metrics === "object";
 
   if (statElements.nonUSShare) {
     statElements.nonUSShare.textContent = hasMetrics
       ? formatPercent(metrics.nonUSShare, 1)
-      : '—';
+      : "—";
   }
 
   if (statElements.uniqueOrigins) {
     statElements.uniqueOrigins.textContent = hasMetrics
       ? formatInteger(metrics.uniqueOrigins)
-      : '—';
+      : "—";
   }
 
   if (statElements.entropy) {
     statElements.entropy.textContent = hasMetrics
       ? formatNumber(metrics.entropy, 2)
-      : '—';
+      : "—";
   }
 
   if (statElements.collabRate) {
     statElements.collabRate.textContent = hasMetrics
       ? `${formatNumber(metrics.collabRate, 1)}%`
-      : '—';
+      : "—";
   }
 
   if (statElements.cumulativeOrigins) {
     statElements.cumulativeOrigins.textContent = hasMetrics
       ? formatInteger(metrics.cumulativeOriginsSoFar)
-      : '—';
+      : "—";
   }
 }
 
 function updateSparklineReadouts(weekIdx) {
   if (!weeks.length) {
     sparklineValueEls.forEach((el) => {
-      if (el) el.textContent = '—';
+      if (el) el.textContent = "—";
     });
     return;
   }
@@ -835,10 +892,10 @@ function updateSparklineReadouts(weekIdx) {
     const el = sparklineValueEls.get(def.key);
     if (!el) continue;
     const rawValue = def.accessor(metrics);
-    if (typeof rawValue === 'number' && Number.isFinite(rawValue)) {
+    if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
       el.textContent = def.formatter(rawValue);
     } else {
-      el.textContent = '—';
+      el.textContent = "—";
     }
   }
 }
@@ -847,7 +904,7 @@ function updateSparklineCursors(weekIdx) {
   if (!sparklineStates.size) return;
   if (!weeks.length) {
     sparklineStates.forEach((state) => {
-      state.cursorLine.attr('opacity', 0);
+      state.cursorLine.attr("opacity", 0);
     });
     return;
   }
@@ -855,7 +912,7 @@ function updateSparklineCursors(weekIdx) {
   const clamped = clampNumber(weekIdx, 0, weeks.length - 1);
   sparklineStates.forEach((state) => {
     const x = state.xScale(clamped);
-    state.cursorLine.attr('x1', x).attr('x2', x).attr('opacity', 0.85);
+    state.cursorLine.attr("x1", x).attr("x2", x).attr("opacity", 0.85);
   });
 }
 
@@ -867,20 +924,20 @@ function updateMapForWeek(weekIdx) {
 function initializeMap(worldTopo) {
   if (!d3 || !worldTopo) return;
 
-  mapSvgSelection = d3.select('#map');
+  mapSvgSelection = d3.select("#map");
   if (mapSvgSelection.empty()) return;
 
-  mapWidth = Number(mapSvgSelection.attr('width')) || 960;
-  mapHeight = Number(mapSvgSelection.attr('height')) || 540;
+  mapWidth = Number(mapSvgSelection.attr("width")) || 960;
+  mapHeight = Number(mapSvgSelection.attr("height")) || 540;
   mapSvgSelection
-    .attr('viewBox', `0 0 ${mapWidth} ${mapHeight}`)
-    .attr('preserveAspectRatio', 'xMidYMid meet');
+    .attr("viewBox", `0 0 ${mapWidth} ${mapHeight}`)
+    .attr("preserveAspectRatio", "xMidYMid meet");
 
   const geojson = feature(worldTopo, worldTopo.objects.countries);
   countryFeatures = geojson.features.filter((f) => {
-    const id = String(f.id).padStart(3, '0');
+    const id = String(f.id).padStart(3, "0");
     const name = f.properties?.name;
-    return id !== '010' && name !== 'Antarctica';
+    return id !== "010" && name !== "Antarctica";
   });
 
   countryFeatureByNumericId = new Map(
@@ -889,41 +946,49 @@ function initializeMap(worldTopo) {
       .filter(([id]) => Number.isFinite(id))
   );
 
-  projection = d3.geoNaturalEarth1().fitExtent(
-    [
-      [20, 20],
-      [mapWidth - 20, mapHeight - 20],
-    ],
-    { type: 'FeatureCollection', features: countryFeatures }
-  );
-  projection = projection.clipExtent([
-    [60, 20],
-    [mapWidth - 60, mapHeight - 20],
-  ]);
+  projection = d3.geoNaturalEarth1().precision(0.1);
+  projection.scale(1).translate([0, 0]);
   pathGenerator = d3.geoPath(projection);
 
-  choroplethLayer = mapSvgSelection.append('g').attr('data-layer', 'countries');
+  const collection = { type: "FeatureCollection", features: countryFeatures };
+  const bounds = pathGenerator.bounds(collection);
+  const dx = bounds[1][0] - bounds[0][0];
+  const dy = bounds[1][1] - bounds[0][1];
+  const xMid = (bounds[0][0] + bounds[1][0]) / 2;
+  const yMid = (bounds[0][1] + bounds[1][1]) / 2;
+
+  const scale = 1.02 * Math.min(mapWidth / dx, mapHeight / dy);
+  const translate = [mapWidth / 2 - scale * xMid, mapHeight / 2 - scale * yMid];
+
+  projection = projection.scale(scale).translate(translate);
+  pathGenerator = d3.geoPath(projection);
+
+  choroplethLayer = mapSvgSelection.append("g").attr("data-layer", "countries");
   choroplethSelection = choroplethLayer
-    .selectAll('path')
+    .selectAll("path")
     .data(countryFeatures, (d) => d.id)
-    .join('path')
-    .attr('d', pathGenerator)
-    .attr('fill', '#e9ecf5')
-    .attr('stroke', '#fff')
-    .attr('stroke-width', 0.4)
-    .attr('vector-effect', 'non-scaling-stroke');
+    .join("path")
+    .attr("d", pathGenerator)
+    .attr("fill", "#e9ecf5")
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 0.4)
+    .attr("vector-effect", "non-scaling-stroke");
 
-  borderLayer = mapSvgSelection.append('g').attr('data-layer', 'borders');
-  const borderMesh = mesh(worldTopo, worldTopo.objects.countries, (a, b) => a !== b);
+  borderLayer = mapSvgSelection.append("g").attr("data-layer", "borders");
+  const borderMesh = mesh(
+    worldTopo,
+    worldTopo.objects.countries,
+    (a, b) => a !== b
+  );
   borderLayer
-    .append('path')
-    .attr('d', pathGenerator(borderMesh))
-    .attr('fill', 'none')
-    .attr('stroke', 'rgba(0,0,0,0.25)')
-    .attr('stroke-width', 0.3)
-    .attr('vector-effect', 'non-scaling-stroke');
+    .append("path")
+    .attr("d", pathGenerator(borderMesh))
+    .attr("fill", "none")
+    .attr("stroke", "rgba(0,0,0,0.25)")
+    .attr("stroke-width", 0.3)
+    .attr("vector-effect", "non-scaling-stroke");
 
-  pinLayer = mapSvgSelection.append('g').attr('data-layer', 'pins');
+  pinLayer = mapSvgSelection.append("g").attr("data-layer", "pins");
 }
 
 function initializeSparklines() {
@@ -942,13 +1007,13 @@ function initializeSparklines() {
       sparklineValueEls.set(def.key, valueEl);
     }
 
-    const svgElement = card.querySelector('svg');
+    const svgElement = card.querySelector("svg");
     if (!svgElement) continue;
 
     const svg = d3.select(svgElement);
-    const width = Number(svg.attr('width')) || 280;
-    const height = Number(svg.attr('height')) || 60;
-    svg.attr('viewBox', `0 0 ${width} ${height}`);
+    const width = Number(svg.attr("width")) || 280;
+    const height = Number(svg.attr("height")) || 60;
+    svg.attr("viewBox", `0 0 ${width} ${height}`);
 
     const margin = { top: 6, right: 8, bottom: 14, left: 24 };
     const xDomain = [0, Math.max(0, weeks.length - 1)];
@@ -957,36 +1022,36 @@ function initializeSparklines() {
     const domain = sparklineDomains.get(def.key) ?? [0, 1];
     const yScale = d3.scaleLinear(domain, [height - margin.bottom, margin.top]);
 
-    const gridGroup = svg.append('g').attr('class', 'sparkline-grid');
+    const gridGroup = svg.append("g").attr("class", "sparkline-grid");
     const yTicks = yScale.ticks(3);
     gridGroup
-      .selectAll('line.sparkline-gridline--y')
+      .selectAll("line.sparkline-gridline--y")
       .data(yTicks)
-      .join('line')
-      .attr('class', 'sparkline-gridline sparkline-gridline--y')
-      .attr('x1', margin.left)
-      .attr('x2', width - margin.right)
-      .attr('y1', (d) => yScale(d))
-      .attr('y2', (d) => yScale(d));
+      .join("line")
+      .attr("class", "sparkline-gridline sparkline-gridline--y")
+      .attr("x1", margin.left)
+      .attr("x2", width - margin.right)
+      .attr("y1", (d) => yScale(d))
+      .attr("y2", (d) => yScale(d));
 
     const xTicks = xScale.ticks(Math.min(4, weeks.length || 1));
     gridGroup
-      .selectAll('line.sparkline-gridline--x')
+      .selectAll("line.sparkline-gridline--x")
       .data(xTicks)
-      .join('line')
-      .attr('class', 'sparkline-gridline sparkline-gridline--x')
-      .attr('x1', (d) => xScale(d))
-      .attr('x2', (d) => xScale(d))
-      .attr('y1', margin.top)
-      .attr('y2', height - margin.bottom);
+      .join("line")
+      .attr("class", "sparkline-gridline sparkline-gridline--x")
+      .attr("x1", (d) => xScale(d))
+      .attr("x2", (d) => xScale(d))
+      .attr("y1", margin.top)
+      .attr("y2", height - margin.bottom);
 
     svg
-      .append('line')
-      .attr('class', 'sparkline-baseline')
-      .attr('x1', margin.left)
-      .attr('x2', width - margin.right)
-      .attr('y1', yScale(domain[0]))
-      .attr('y2', yScale(domain[0]));
+      .append("line")
+      .attr("class", "sparkline-baseline")
+      .attr("x1", margin.left)
+      .attr("x2", width - margin.right)
+      .attr("y1", yScale(domain[0]))
+      .attr("y2", yScale(domain[0]));
 
     const lineGenerator = d3
       .line()
@@ -997,31 +1062,31 @@ function initializeSparklines() {
     const series = sparklineSeriesByKey.get(def.key) ?? [];
 
     svg
-      .append('path')
+      .append("path")
       .datum(series)
-      .attr('class', 'sparkline-path')
-      .attr('stroke', def.stroke)
-      .attr('d', lineGenerator);
+      .attr("class", "sparkline-path")
+      .attr("stroke", def.stroke)
+      .attr("d", lineGenerator);
 
     const cursorLine = svg
-      .append('line')
-      .attr('class', 'sparkline-cursor')
-      .attr('y1', margin.top)
-      .attr('y2', height - margin.bottom)
-      .attr('x1', margin.left)
-      .attr('x2', margin.left)
-      .attr('opacity', weeks.length ? 0.85 : 0);
+      .append("line")
+      .attr("class", "sparkline-cursor")
+      .attr("y1", margin.top)
+      .attr("y2", height - margin.bottom)
+      .attr("x1", margin.left)
+      .attr("x2", margin.left)
+      .attr("opacity", weeks.length ? 0.85 : 0);
 
     const innerWidth = Math.max(0, width - margin.left - margin.right);
     const innerHeight = Math.max(0, height - margin.top - margin.bottom);
 
     const overlaySelection = svg
-      .append('rect')
-      .attr('class', 'sparkline-overlay')
-      .attr('x', margin.left)
-      .attr('y', margin.top)
-      .attr('width', innerWidth)
-      .attr('height', innerHeight);
+      .append("rect")
+      .attr("class", "sparkline-overlay")
+      .attr("x", margin.left)
+      .attr("y", margin.top)
+      .attr("width", innerWidth)
+      .attr("height", innerHeight);
 
     const state = {
       def,
@@ -1035,19 +1100,27 @@ function initializeSparklines() {
     };
 
     overlaySelection
-      .on('pointermove', (event) => handleSparklinePointer(event, state))
-      .on('pointerleave', () => handleSparklinePointerLeave())
-      .on('click', (event) => handleSparklineClick(event, state));
+      .on("pointermove", (event) => handleSparklinePointer(event, state))
+      .on("pointerleave", () => handleSparklinePointerLeave())
+      .on("click", (event) => handleSparklineClick(event, state));
 
     sparklineStates.set(def.key, state);
   }
 }
 
-function updateChoroplethForWeek(weekIdx, mode = currentChoroplethMode, excludeUsCurrent = excludeUs) {
+function updateChoroplethForWeek(
+  weekIdx,
+  mode = currentChoroplethMode,
+  excludeUsCurrent = excludeUs
+) {
   if (!choroplethSelection) return;
 
   const clamped = clampNumber(weekIdx, 0, Math.max(0, weeks.length - 1));
-  const { normalizedShares, maxShare } = getNormalizedSharesForWeek(clamped, mode, excludeUsCurrent);
+  const { normalizedShares, maxShare } = getNormalizedSharesForWeek(
+    clamped,
+    mode,
+    excludeUsCurrent
+  );
   const fillByNumericId = new Map();
   for (const [iso, share] of normalizedShares.entries()) {
     const numericId = ISO_TO_NUMERIC_ID[iso];
@@ -1057,22 +1130,20 @@ function updateChoroplethForWeek(weekIdx, mode = currentChoroplethMode, excludeU
   }
 
   const domainMax = maxShare > 0 ? maxShare : 0.01;
-  if (mode !== 'first-activation') {
+  if (mode !== "first-activation") {
     choroplethColorScale.domain([0, domainMax]);
   }
 
   const transition = d3.transition().duration(200);
 
-  choroplethSelection
-    .transition(transition)
-    .attr('fill', (d) => {
-      const share = fillByNumericId.get(Number(d.id)) ?? 0;
-      if (mode === 'first-activation') {
-        return share > 0 ? '#1f9393' : '#e9ecf5';
-      }
-      const clampedShare = Math.min(share, domainMax);
-      return clampedShare > 0 ? choroplethColorScale(clampedShare) : '#e9ecf5';
-    });
+  choroplethSelection.transition(transition).attr("fill", (d) => {
+    const share = fillByNumericId.get(Number(d.id)) ?? 0;
+    if (mode === "first-activation") {
+      return share > 0 ? "#1f9393" : "#e9ecf5";
+    }
+    const clampedShare = Math.min(share, domainMax);
+    return clampedShare > 0 ? choroplethColorScale(clampedShare) : "#e9ecf5";
+  });
 
   updateLegend(maxShare, mode);
 }
@@ -1084,13 +1155,13 @@ function getWeeklyShares(weekIdx, excludeUsCurrent) {
 
   let denominator = totalWeight;
   if (excludeUsCurrent) {
-    denominator -= weightMap.get('US') ?? 0;
+    denominator -= weightMap.get("US") ?? 0;
   }
   if (denominator <= 0) return null;
 
   const shares = new Map();
   weightMap.forEach((weight, iso) => {
-    if (excludeUsCurrent && iso === 'US') return;
+    if (excludeUsCurrent && iso === "US") return;
     if (weight <= 0) return;
     shares.set(iso, weight / denominator);
   });
@@ -1098,8 +1169,12 @@ function getWeeklyShares(weekIdx, excludeUsCurrent) {
   return shares;
 }
 
-function getNormalizedSharesForWeek(weekIdx, mode = 'weekly-share', excludeUsCurrent = false) {
-  if (mode === 'first-activation') {
+function getNormalizedSharesForWeek(
+  weekIdx,
+  mode = "weekly-share",
+  excludeUsCurrent = false
+) {
+  if (mode === "first-activation") {
     const activated = new Map();
     for (let i = 0; i <= weekIdx; i += 1) {
       const weekShares = getWeeklyShares(i, excludeUsCurrent);
@@ -1113,7 +1188,7 @@ function getNormalizedSharesForWeek(weekIdx, mode = 'weekly-share', excludeUsCur
     return { normalizedShares: activated, maxShare: 1 };
   }
 
-  if (mode === 'cumulative-share') {
+  if (mode === "cumulative-share") {
     const cumulative = new Map();
     for (let i = 0; i <= weekIdx; i += 1) {
       const weekShares = getWeeklyShares(i, excludeUsCurrent);
@@ -1133,7 +1208,8 @@ function getNormalizedSharesForWeek(weekIdx, mode = 'weekly-share', excludeUsCur
     }
     const sorted = values.slice().sort((a, b) => a - b);
     const percentileIndex = Math.floor(sorted.length * 0.95);
-    const percentileValue = sorted[Math.min(sorted.length - 1, percentileIndex)];
+    const percentileValue =
+      sorted[Math.min(sorted.length - 1, percentileIndex)];
     const maxShare = percentileValue || sorted[sorted.length - 1];
 
     return { normalizedShares: cumulative, maxShare };
@@ -1151,36 +1227,36 @@ function getNormalizedSharesForWeek(weekIdx, mode = 'weekly-share', excludeUsCur
   return { normalizedShares: weeklyShares, maxShare };
 }
 
-function updateLegend(maxShare, mode = 'weekly-share') {
+function updateLegend(maxShare, mode = "weekly-share") {
   if (!legendEl) return;
 
-  legendEl.textContent = '';
+  legendEl.textContent = "";
 
-  if (mode === 'first-activation') {
-    const container = document.createElement('div');
-    container.className = 'legend-swatches';
+  if (mode === "first-activation") {
+    const container = document.createElement("div");
+    container.className = "legend-swatches";
 
-    const offSwatch = document.createElement('span');
-    offSwatch.className = 'legend-swatch';
-    offSwatch.style.width = '20px';
-    offSwatch.style.height = '14px';
-    offSwatch.style.background = '#e9ecf5';
+    const offSwatch = document.createElement("span");
+    offSwatch.className = "legend-swatch";
+    offSwatch.style.width = "20px";
+    offSwatch.style.height = "14px";
+    offSwatch.style.background = "#e9ecf5";
     container.appendChild(offSwatch);
 
-    const offLabel = document.createElement('span');
-    offLabel.textContent = 'Not activated';
+    const offLabel = document.createElement("span");
+    offLabel.textContent = "Not activated";
     container.appendChild(offLabel);
 
-    const onSwatch = document.createElement('span');
-    onSwatch.className = 'legend-swatch';
-    onSwatch.style.width = '20px';
-    onSwatch.style.height = '14px';
-    onSwatch.style.background = '#1f9393';
-    onSwatch.style.marginLeft = '0.75rem';
+    const onSwatch = document.createElement("span");
+    onSwatch.className = "legend-swatch";
+    onSwatch.style.width = "20px";
+    onSwatch.style.height = "14px";
+    onSwatch.style.background = "#1f9393";
+    onSwatch.style.marginLeft = "0.75rem";
     container.appendChild(onSwatch);
 
-    const onLabel = document.createElement('span');
-    onLabel.textContent = 'Activated';
+    const onLabel = document.createElement("span");
+    onLabel.textContent = "Activated";
     container.appendChild(onLabel);
 
     legendEl.appendChild(container);
@@ -1188,31 +1264,35 @@ function updateLegend(maxShare, mode = 'weekly-share') {
   }
 
   if (!Number.isFinite(maxShare) || maxShare <= 0) {
-    const placeholder = document.createElement('span');
-    placeholder.textContent = 'No origin data';
+    const placeholder = document.createElement("span");
+    placeholder.textContent = "No origin data";
     legendEl.appendChild(placeholder);
     return;
   }
 
-  const title = document.createElement('span');
-  title.textContent = mode === 'cumulative-share' ? 'Cumulative share' : 'Weekly share';
+  const title = document.createElement("span");
+  title.textContent =
+    mode === "cumulative-share" ? "Cumulative share" : "Weekly share";
 
-  const swatchContainer = document.createElement('div');
-  swatchContainer.className = 'legend-swatches';
+  const swatchContainer = document.createElement("div");
+  swatchContainer.className = "legend-swatches";
 
   const steps = 5;
   const values = d3.range(steps).map((i) => (maxShare * i) / (steps - 1));
   values.forEach((value) => {
-    const swatch = document.createElement('span');
-    swatch.className = 'legend-swatch';
+    const swatch = document.createElement("span");
+    swatch.className = "legend-swatch";
     swatch.style.background = choroplethColorScale(value);
     swatchContainer.appendChild(swatch);
   });
 
-  const minLabel = document.createElement('span');
-  minLabel.textContent = mode === 'cumulative-share' ? '0' : '0%';
-  const maxLabel = document.createElement('span');
-  maxLabel.textContent = mode === 'cumulative-share' ? formatNumber(maxShare, 2) : formatPercent(maxShare, 1);
+  const minLabel = document.createElement("span");
+  minLabel.textContent = mode === "cumulative-share" ? "0" : "0%";
+  const maxLabel = document.createElement("span");
+  maxLabel.textContent =
+    mode === "cumulative-share"
+      ? formatNumber(maxShare, 2)
+      : formatPercent(maxShare, 1);
 
   legendEl.appendChild(title);
   legendEl.appendChild(minLabel);
@@ -1226,38 +1306,38 @@ function updatePinsForWeek(targetWeekIdx) {
   const pinsData = computePinsDataset(targetWeekIdx);
   const transition = d3.transition().duration(200);
 
-  const pins = pinLayer.selectAll('circle').data(pinsData, (d) => d.id);
+  const pins = pinLayer.selectAll("circle").data(pinsData, (d) => d.id);
 
   pins
     .join(
       (enter) =>
         enter
-          .append('circle')
-          .attr('cx', (d) => d.position[0])
-          .attr('cy', (d) => d.position[1])
-          .attr('r', 0)
-          .attr('fill', (d) => d.color)
-          .attr('stroke', (d) => d.strokeColor)
-          .attr('stroke-width', (d) => d.strokeWidth)
-          .attr('vector-effect', 'non-scaling-stroke')
-          .attr('fill-opacity', 0),
+          .append("circle")
+          .attr("cx", (d) => d.position[0])
+          .attr("cy", (d) => d.position[1])
+          .attr("r", 0)
+          .attr("fill", (d) => d.color)
+          .attr("stroke", (d) => d.strokeColor)
+          .attr("stroke-width", (d) => d.strokeWidth)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("fill-opacity", 0),
       (update) => update,
       (exit) =>
         exit
           .transition(transition)
-          .attr('fill-opacity', 0)
-          .attr('r', 0)
+          .attr("fill-opacity", 0)
+          .attr("r", 0)
           .remove()
     )
     .call(bindPinInteractions)
     .transition(transition)
-    .attr('cx', (d) => d.position[0])
-    .attr('cy', (d) => d.position[1])
-    .attr('r', (d) => d.radius)
-    .attr('fill', (d) => d.color)
-    .attr('stroke', (d) => d.strokeColor)
-    .attr('stroke-width', (d) => d.strokeWidth)
-    .attr('fill-opacity', (d) => d.opacity);
+    .attr("cx", (d) => d.position[0])
+    .attr("cy", (d) => d.position[1])
+    .attr("r", (d) => d.radius)
+    .attr("fill", (d) => d.color)
+    .attr("stroke", (d) => d.strokeColor)
+    .attr("stroke-width", (d) => d.strokeWidth)
+    .attr("fill-opacity", (d) => d.opacity);
 }
 
 function computePinsDataset(targetWeekIdx) {
@@ -1283,7 +1363,8 @@ function computePinsDataset(targetWeekIdx) {
         if (!feature) continue;
 
         const centroid = pathGenerator.centroid(feature);
-        if (!centroid || centroid.some((value) => !Number.isFinite(value))) continue;
+        if (!centroid || centroid.some((value) => !Number.isFinite(value)))
+          continue;
 
         const radius = Math.max(2, 10 - row.rank * 0.3);
         const weeksAway = Math.abs(idx - clampedTarget);
@@ -1294,7 +1375,7 @@ function computePinsDataset(targetWeekIdx) {
 
         const primaryOrigin = row.origins[0] ?? origin;
         const color = getPinColor(row, primaryOrigin, currentPinColorMode);
-        const strokeColor = row.origins.length >= 2 ? '#ffffff' : '#222222';
+        const strokeColor = row.origins.length >= 2 ? "#ffffff" : "#222222";
         const strokeWidth = row.origins.length >= 2 ? 1.4 : 0.8;
 
         results.push({
@@ -1323,24 +1404,24 @@ function computePinsDataset(targetWeekIdx) {
 }
 
 function getPinColor(row, origin, mode) {
-  if (mode === 'none') {
+  if (mode === "none") {
     return neutralPinColor;
   }
 
-  if (mode === 'genre-supergroup') {
+  if (mode === "genre-supergroup") {
     const superGenre = toSuperGenre(row.genre);
     return superGenreScale(superGenre);
   }
 
-  const region = regionMapping[origin] ?? 'Other';
+  const region = regionMapping[origin] ?? "Other";
   return regionColors[region] ?? regionColors.Other;
 }
 
 function bindPinInteractions(selection) {
   selection
-    .on('mouseenter', handlePinMouseEnter)
-    .on('mouseleave', handlePinMouseLeave)
-    .on('mousemove', handlePinMouseMove);
+    .on("mouseenter", handlePinMouseEnter)
+    .on("mouseleave", handlePinMouseLeave)
+    .on("mousemove", handlePinMouseMove);
 }
 
 function handlePinMouseEnter(event, pin) {
@@ -1384,7 +1465,9 @@ function handleSparklinePointer(event, state) {
 
   const label = state.def.label;
   sparklineTooltipEl.hidden = false;
-  sparklineTooltipEl.textContent = `${label}: ${state.def.formatter(point.value)} (${point.isoDate})`;
+  sparklineTooltipEl.textContent = `${label}: ${state.def.formatter(
+    point.value
+  )} (${point.isoDate})`;
   sparklineTooltipEl.style.left = `${event.clientX + 12}px`;
   sparklineTooltipEl.style.top = `${event.clientY - 16}px`;
 }
@@ -1405,16 +1488,22 @@ function handleSparklineClick(event, state) {
 function findWeekIndexForPointer(event, state) {
   if (!weeks.length) return null;
   const [sx] = d3.pointer(event, state.svg.node());
-  const clampedPx = clampNumber(sx, state.margin.left, state.width - state.margin.right);
+  const clampedPx = clampNumber(
+    sx,
+    state.margin.left,
+    state.width - state.margin.right
+  );
   const scaledIndex = state.xScale.invert(clampedPx);
   const nearestIdx = clampNumber(Math.round(scaledIndex), 0, weeks.length - 1);
   return nearestIdx;
 }
 
 function formatPinTooltip(pin) {
-  const primaryArtist = pin.artists && pin.artists.length ? pin.artists[0] : 'Unknown Artist';
-  const originLabel = pin.origins && pin.origins.length ? pin.origins.join(', ') : '—';
-  const genre = pin.genre || 'Unknown';
+  const primaryArtist =
+    pin.artists && pin.artists.length ? pin.artists[0] : "Unknown Artist";
+  const originLabel =
+    pin.origins && pin.origins.length ? pin.origins.join(", ") : "—";
+  const genre = pin.genre || "Unknown";
   return `
     <strong>#${pin.rank} · ${pin.name}</strong><br />
     ${primaryArtist}<br />
@@ -1425,17 +1514,17 @@ function formatPinTooltip(pin) {
 }
 
 function formatPercent(value, decimals = 1) {
-  if (!Number.isFinite(value)) return '—';
+  if (!Number.isFinite(value)) return "—";
   return `${formatNumber(value * 100, decimals)}%`;
 }
 
 function formatNumber(value, decimals = 0) {
-  if (!Number.isFinite(value)) return '—';
+  if (!Number.isFinite(value)) return "—";
   return value.toFixed(decimals);
 }
 
 function formatInteger(value) {
-  if (!Number.isFinite(value)) return '—';
+  if (!Number.isFinite(value)) return "—";
   return Math.round(value).toString();
 }
 
@@ -1445,43 +1534,43 @@ function clampNumber(value, min, max) {
 
 function renderPinLegend() {
   if (!pinLegendEl) return;
-  pinLegendEl.textContent = '';
+  pinLegendEl.textContent = "";
 
-  const heading = document.createElement('div');
-  heading.className = 'legend-heading';
-  if (currentPinColorMode === 'origin-region') {
-    heading.textContent = 'Pin color · Origin region';
-  } else if (currentPinColorMode === 'genre-supergroup') {
-    heading.textContent = 'Pin color · Genre supergroup';
+  const heading = document.createElement("div");
+  heading.className = "legend-heading";
+  if (currentPinColorMode === "origin-region") {
+    heading.textContent = "Pin color · Origin region";
+  } else if (currentPinColorMode === "genre-supergroup") {
+    heading.textContent = "Pin color · Genre supergroup";
   } else {
-    heading.textContent = 'Pin color · None';
+    heading.textContent = "Pin color · None";
   }
   pinLegendEl.appendChild(heading);
 
   let items = [];
-  if (currentPinColorMode === 'genre-supergroup') {
+  if (currentPinColorMode === "genre-supergroup") {
     items = superGenreOrder.map((label) => ({
       label,
       color: superGenreScale(label),
     }));
-  } else if (currentPinColorMode === 'origin-region') {
+  } else if (currentPinColorMode === "origin-region") {
     items = Object.keys(regionColors).map((label) => ({
       label,
       color: regionColors[label],
     }));
   } else {
-    items = [{ label: 'Neutral', color: neutralPinColor }];
+    items = [{ label: "Neutral", color: neutralPinColor }];
   }
 
   items.forEach((item) => {
-    const el = document.createElement('div');
-    el.className = 'pin-legend-item';
+    const el = document.createElement("div");
+    el.className = "pin-legend-item";
 
-    const swatch = document.createElement('span');
-    swatch.className = 'pin-legend-swatch';
+    const swatch = document.createElement("span");
+    swatch.className = "pin-legend-swatch";
     swatch.style.background = item.color;
 
-    const label = document.createElement('span');
+    const label = document.createElement("span");
     label.textContent = item.label;
 
     el.appendChild(swatch);
@@ -1491,64 +1580,81 @@ function renderPinLegend() {
 }
 
 function toSuperGenre(genre) {
-  const s = (genre || 'Unknown').toLowerCase();
-  if (s.includes('hip hop') || s.includes('rap') || s.includes('drill') || s.includes('trap') || s.includes('grime')) {
-    return 'Hip-Hop/Rap';
-  }
-  if (s.includes('rock') || s.includes('metal') || s.includes('punk') || s.includes('grunge') || s.includes('emo')) {
-    return 'Rock/Metal';
+  const s = (genre || "Unknown").toLowerCase();
+  if (
+    s.includes("hip hop") ||
+    s.includes("rap") ||
+    s.includes("drill") ||
+    s.includes("trap") ||
+    s.includes("grime")
+  ) {
+    return "Hip-Hop/Rap";
   }
   if (
-    s.includes('edm') ||
-    s.includes('electro') ||
-    s.includes('house') ||
-    s.includes('trance') ||
-    s.includes('techno') ||
-    s.includes('dance') ||
-    s.includes('dubstep') ||
-    s.includes('euro')
+    s.includes("rock") ||
+    s.includes("metal") ||
+    s.includes("punk") ||
+    s.includes("grunge") ||
+    s.includes("emo")
   ) {
-    return 'Electronic/Dance';
+    return "Rock/Metal";
   }
   if (
-    s.includes('r&b') ||
-    s.includes('soul') ||
-    s.includes('motown') ||
-    s.includes('funk') ||
-    s.includes('quiet storm')
+    s.includes("edm") ||
+    s.includes("electro") ||
+    s.includes("house") ||
+    s.includes("trance") ||
+    s.includes("techno") ||
+    s.includes("dance") ||
+    s.includes("dubstep") ||
+    s.includes("euro")
   ) {
-    return 'R&B/Soul/Funk';
-  }
-  if (s.includes('country') || s.includes('americana') || s.includes('bluegrass') || s.includes('folk')) {
-    return 'Country/Folk/Americana';
+    return "Electronic/Dance";
   }
   if (
-    s.includes('latin') ||
-    s.includes('reggaeton') ||
-    s.includes('bachata') ||
-    s.includes('merengue') ||
-    s.includes('cumbia') ||
-    s.includes('vallenato') ||
-    s.includes('español')
+    s.includes("r&b") ||
+    s.includes("soul") ||
+    s.includes("motown") ||
+    s.includes("funk") ||
+    s.includes("quiet storm")
   ) {
-    return 'Latin';
+    return "R&B/Soul/Funk";
   }
   if (
-    s.includes('reggae') ||
-    s.includes('dancehall') ||
-    s.includes('soca') ||
-    s.includes('calypso') ||
-    s.includes('ragga')
+    s.includes("country") ||
+    s.includes("americana") ||
+    s.includes("bluegrass") ||
+    s.includes("folk")
   ) {
-    return 'Reggae/Caribbean';
+    return "Country/Folk/Americana";
   }
-  if (s.includes('jazz') || s.includes('swing') || s.includes('bossa')) {
-    return 'Jazz/Blues';
+  if (
+    s.includes("latin") ||
+    s.includes("reggaeton") ||
+    s.includes("bachata") ||
+    s.includes("merengue") ||
+    s.includes("cumbia") ||
+    s.includes("vallenato") ||
+    s.includes("español")
+  ) {
+    return "Latin";
   }
-  if (s.includes('pop')) {
-    return 'Pop';
+  if (
+    s.includes("reggae") ||
+    s.includes("dancehall") ||
+    s.includes("soca") ||
+    s.includes("calypso") ||
+    s.includes("ragga")
+  ) {
+    return "Reggae/Caribbean";
   }
-  return 'Other/Unknown';
+  if (s.includes("jazz") || s.includes("swing") || s.includes("bossa")) {
+    return "Jazz/Blues";
+  }
+  if (s.includes("pop")) {
+    return "Pop";
+  }
+  return "Other/Unknown";
 }
 
 function exposeForDebugging() {
