@@ -35,6 +35,39 @@
               <input type="checkbox" id="exclude-us" data-role="exclude-us" />
               Exclude US
             </label>
+            <label class="control-label">
+              Playback speed
+              <select id="playback-speed" data-role="playback-speed">
+                <option value="100">Fast (100 ms)</option>
+                <option value="200" selected>Normal (200 ms)</option>
+                <option value="400">Slow (400 ms)</option>
+                <option value="800">Very Slow (800 ms)</option>
+              </select>
+            </label>
+            <label class="control-label control-label--small">
+              Top pins
+              <input
+                type="number"
+                id="top-pin-count"
+                data-role="top-pin-count"
+                min="1"
+                max="50"
+                step="1"
+                value="10"
+              />
+            </label>
+            <label class="control-label control-label--small">
+              Ghost window (weeks)
+              <input
+                type="number"
+                id="window-weeks"
+                data-role="window-weeks"
+                min="0"
+                max="26"
+                step="1"
+                value="8"
+              />
+            </label>
           </div>
           <div class="map-legends">
             <div class="map-legend" data-role="map-legend"></div>
@@ -47,48 +80,6 @@
           </svg>
           <div class="map-tooltip" data-role="map-tooltip" hidden></div>
         </div>
-        <div class="sparkline-group" data-role="sparklines">
-          <div class="sparkline-card" data-sparkline="nonUSShare">
-            <div class="sparkline-card__header">
-              <span class="sparkline-title">Non-US Share</span>
-              <span class="sparkline-value" data-sparkline-value="nonUSShare">—</span>
-            </div>
-            <svg
-              class="sparkline-chart"
-              width="280"
-              height="60"
-              role="img"
-              aria-label="Non-US Share over time"
-            ></svg>
-          </div>
-          <div class="sparkline-card" data-sparkline="uniqueOrigins">
-            <div class="sparkline-card__header">
-              <span class="sparkline-title">Unique Origins</span>
-              <span class="sparkline-value" data-sparkline-value="uniqueOrigins">—</span>
-            </div>
-            <svg
-              class="sparkline-chart"
-              width="280"
-              height="60"
-              role="img"
-              aria-label="Unique Origins over time"
-            ></svg>
-          </div>
-          <div class="sparkline-card" data-sparkline="entropy">
-            <div class="sparkline-card__header">
-              <span class="sparkline-title">Shannon Entropy H</span>
-              <span class="sparkline-value" data-sparkline-value="entropy">—</span>
-            </div>
-            <svg
-              class="sparkline-chart"
-              width="280"
-              height="60"
-              role="img"
-              aria-label="Shannon Entropy over time"
-            ></svg>
-          </div>
-        </div>
-        <div class="sparkline-tooltip" data-role="sparkline-tooltip" hidden></div>
       </section>
       <section class="panel panel--stats">
         <h2>Weekly Stats</h2>
@@ -114,6 +105,50 @@
             <span class="stat-value" data-stat="cumulativeOrigins">—</span>
           </div>
         </div>
+        <div class="sparkline-section">
+          <h3 class="sparkline-heading">Trend Overview</h3>
+          <div class="sparkline-group" data-role="sparklines">
+            <div class="sparkline-card" data-sparkline="nonUSShare">
+              <div class="sparkline-card__header">
+                <span class="sparkline-title">Non-US Share</span>
+                <span class="sparkline-value" data-sparkline-value="nonUSShare">—</span>
+              </div>
+              <svg
+                class="sparkline-chart"
+                width="320"
+                height="70"
+                role="img"
+                aria-label="Non-US Share over time"
+              ></svg>
+            </div>
+            <div class="sparkline-card" data-sparkline="uniqueOrigins">
+              <div class="sparkline-card__header">
+                <span class="sparkline-title">Unique Origins</span>
+                <span class="sparkline-value" data-sparkline-value="uniqueOrigins">—</span>
+              </div>
+              <svg
+                class="sparkline-chart"
+                width="320"
+                height="70"
+                role="img"
+                aria-label="Unique Origins over time"
+              ></svg>
+            </div>
+            <div class="sparkline-card" data-sparkline="entropy">
+              <div class="sparkline-card__header">
+                <span class="sparkline-title">Shannon Entropy H</span>
+                <span class="sparkline-value" data-sparkline-value="entropy">—</span>
+              </div>
+              <svg
+                class="sparkline-chart"
+                width="320"
+                height="70"
+                role="img"
+                aria-label="Shannon Entropy over time"
+              ></svg>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
     <footer>
@@ -136,11 +171,9 @@
           />
         </div>
       </div>
-      <div class="footer-slot">
-        <h3>SPARKLINES (Step 4)</h3>
-        <!-- TODO: Step 4 - render sparkline summaries for selected metrics -->
-      </div>
     </footer>
+
+    <div class="sparkline-tooltip" data-role="sparkline-tooltip" hidden></div>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
     <script type="module" src="app.js"></script>

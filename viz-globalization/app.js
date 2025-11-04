@@ -88,10 +88,11 @@ const sparklineStates = new Map();
 const sparklineValueEls = new Map();
 
 const START_DATE = new Date(`${START_DATE_STR}T00:00:00Z`);
+const DEFAULT_PLAYBACK_SPEED_MS = 200;
 
 let currentWeekIndex = 0;
 let isPlaying = false;
-const playSpeedMs = 200;
+let playSpeedMs = DEFAULT_PLAYBACK_SPEED_MS;
 let playTimer = null;
 let isScrubbing = false;
 
@@ -107,6 +108,9 @@ let sparklineTooltipEl = null;
 let choroplethModeSelectEl = null;
 let pinColorModeSelectEl = null;
 let excludeUsCheckboxEl = null;
+let playbackSpeedSelectEl = null;
+let topPinCountInputEl = null;
+let windowWeeksInputEl = null;
 
 const statElements = {
   nonUSShare: null,
@@ -130,6 +134,8 @@ let pinLayer = null;
 let currentChoroplethMode = 'weekly-share';
 let currentPinColorMode = 'origin-region';
 let excludeUs = EXCLUDE_US;
+let topPinN = TOP_PIN_N;
+let windowWeeks = WINDOW_WEEKS;
 
 const choroplethColorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, 1]);
 const neutralPinColor = '#444';
@@ -503,6 +509,9 @@ function cacheDomReferences() {
   choroplethModeSelectEl = document.querySelector('[data-role="choropleth-mode"]');
   pinColorModeSelectEl = document.querySelector('[data-role="pin-color-mode"]');
   excludeUsCheckboxEl = document.querySelector('[data-role="exclude-us"]');
+  playbackSpeedSelectEl = document.querySelector('[data-role="playback-speed"]');
+  topPinCountInputEl = document.querySelector('[data-role="top-pin-count"]');
+  windowWeeksInputEl = document.querySelector('[data-role="window-weeks"]');
 
   statElements.nonUSShare = document.querySelector('[data-stat="nonUSShare"]');
   statElements.uniqueOrigins = document.querySelector('[data-stat="uniqueOrigins"]');
@@ -525,6 +534,15 @@ function cacheDomReferences() {
   }
   if (excludeUsCheckboxEl) {
     excludeUsCheckboxEl.checked = excludeUs;
+  }
+  if (playbackSpeedSelectEl) {
+    playbackSpeedSelectEl.value = String(playSpeedMs);
+  }
+  if (topPinCountInputEl) {
+    topPinCountInputEl.value = String(topPinN);
+  }
+  if (windowWeeksInputEl) {
+    windowWeeksInputEl.value = String(windowWeeks);
   }
 }
 
@@ -579,8 +597,25 @@ function setupControls() {
     });
   }
 
+  if (playbackSpeedSelectEl) {
+    playbackSpeedSelectEl.addEventListener('change', (event) => {
+      updatePlaybackSpeed(event.target.value);
+    });
+  }
+
+  if (topPinCountInputEl) {
+    const handleTopPinChange = () => updateTopPinCount(topPinCountInputEl.value);
+    topPinCountInputEl.addEventListener('change', handleTopPinChange);
+    topPinCountInputEl.addEventListener('input', handleTopPinChange);
+  }
+
+  if (windowWeeksInputEl) {
+    const handleWindowWeeksChange = () => updateWindowWeeks(windowWeeksInputEl.value);
+    windowWeeksInputEl.addEventListener('change', handleWindowWeeksChange);
+    windowWeeksInputEl.addEventListener('input', handleWindowWeeksChange);
+  }
+
   // TODO: Add keyboard controls (space to toggle, arrows to step through weeks).
-  // TODO: Allow adjusting playback speed directly in the UI.
 
   renderPinLegend();
 }
@@ -628,7 +663,23 @@ function play() {
 
   isPlaying = true;
   updatePlayButton();
+  startPlaybackTimer();
+}
 
+function pause() {
+  stopPlaybackTimer();
+
+  if (!isPlaying) {
+    updatePlayButton();
+    return;
+  }
+
+  isPlaying = false;
+  updatePlayButton();
+}
+
+function startPlaybackTimer() {
+  stopPlaybackTimer();
   playTimer = window.setInterval(() => {
     if (isScrubbing) return;
     if (currentWeekIndex >= weeks.length - 1) {
@@ -639,19 +690,51 @@ function play() {
   }, playSpeedMs);
 }
 
-function pause() {
+function stopPlaybackTimer() {
   if (playTimer !== null) {
     window.clearInterval(playTimer);
     playTimer = null;
   }
+}
 
-  if (!isPlaying) {
-    updatePlayButton();
-    return;
+function restartPlaybackTimer() {
+  if (!isPlaying) return;
+  startPlaybackTimer();
+}
+
+function updatePlaybackSpeed(newSpeed) {
+  const next = clampNumber(Number(newSpeed) || DEFAULT_PLAYBACK_SPEED_MS, 50, 2000);
+  playSpeedMs = next;
+  if (playbackSpeedSelectEl) {
+    playbackSpeedSelectEl.value = String(playSpeedMs);
   }
+  if (isPlaying) {
+    restartPlaybackTimer();
+  }
+  return playSpeedMs;
+}
 
-  isPlaying = false;
-  updatePlayButton();
+function updateTopPinCount(newValue) {
+  const rounded = Math.round(Number(newValue));
+  const next = clampNumber(Number.isFinite(rounded) ? rounded : TOP_PIN_N, 1, 50);
+  topPinN = next;
+  if (topPinCountInputEl) {
+    topPinCountInputEl.value = String(topPinN);
+  }
+  renderPinLegend();
+  updatePinsForWeek(currentWeekIndex);
+  return topPinN;
+}
+
+function updateWindowWeeks(newValue) {
+  const rounded = Math.round(Number(newValue));
+  const next = clampNumber(Number.isFinite(rounded) ? rounded : WINDOW_WEEKS, 0, 26);
+  windowWeeks = next;
+  if (windowWeeksInputEl) {
+    windowWeeksInputEl.value = String(windowWeeks);
+  }
+  updatePinsForWeek(currentWeekIndex);
+  return windowWeeks;
 }
 
 function updatePlayButton() {
@@ -1169,12 +1252,12 @@ function computePinsDataset(targetWeekIdx) {
 
   const clampedTarget = clampNumber(targetWeekIdx, 0, weeks.length - 1);
 
-  const start = Math.max(0, clampedTarget - WINDOW_WEEKS);
-  const end = Math.min(weeks.length - 1, clampedTarget + WINDOW_WEEKS);
+  const start = Math.max(0, clampedTarget - windowWeeks);
+  const end = Math.min(weeks.length - 1, clampedTarget + windowWeeks);
 
   for (let idx = start; idx <= end; idx += 1) {
     const weekRows = rowsByWeekIndex.get(idx) ?? [];
-    const topRows = weekRows.slice(0, TOP_PIN_N);
+    const topRows = weekRows.slice(0, topPinN);
 
     for (const row of topRows) {
       if (!row.origins.length) continue;
@@ -1193,7 +1276,7 @@ function computePinsDataset(targetWeekIdx) {
         const ghostOpacity =
           idx === clampedTarget
             ? 0.9
-            : Math.max(0.05, 0.2 - (0.15 * weeksAway) / (WINDOW_WEEKS + 1));
+            : Math.max(0.05, 0.2 - (0.15 * weeksAway) / (windowWeeks + 1));
 
         const primaryOrigin = row.origins[0] ?? origin;
         const color = getPinColor(row, primaryOrigin, currentPinColorMode);
@@ -1470,6 +1553,7 @@ function exposeForDebugging() {
       TOP_PIN_N,
       WINDOW_WEEKS,
       playSpeedMs,
+      defaultPlaybackSpeedMs: DEFAULT_PLAYBACK_SPEED_MS,
       EXCLUDE_US,
     },
     state: {
@@ -1498,6 +1582,12 @@ function exposeForDebugging() {
         }
         updateMapForWeek(currentWeekIndex);
       },
+      getPlaybackSpeed: () => playSpeedMs,
+      setPlaybackSpeed: (value) => updatePlaybackSpeed(value),
+      getTopPinCount: () => topPinN,
+      setTopPinCount: (value) => updateTopPinCount(value),
+      getWindowWeeks: () => windowWeeks,
+      setWindowWeeks: (value) => updateWindowWeeks(value),
     },
     getWeekRows,
     setWeekIndex,
