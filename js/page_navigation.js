@@ -8,7 +8,7 @@
     let hideTimeout = null;
     
     function updateScrollHint() {
-        const scrollY = window.scrollY || document.documentElement.scrollTop;
+        const scrollY = document.body.scrollTop || window.scrollY || document.documentElement.scrollTop;
         
         if (scrollY <= 50) {
             // Near the top - show the hint
@@ -30,8 +30,9 @@
     // Check on page load
     updateScrollHint();
     
-    // Update on scroll
+    // Update on scroll - listen to both window and body
     window.addEventListener('scroll', updateScrollHint);
+    document.body.addEventListener('scroll', updateScrollHint);
 })();
 
 // Page indicator dots
@@ -42,7 +43,7 @@
     if (pages.length === 0 || dots.length === 0) return;
     
     function updateActiveDot() {
-        const scrollY = window.scrollY || document.documentElement.scrollTop;
+        const scrollY = document.body.scrollTop || window.scrollY || document.documentElement.scrollTop;
         const windowHeight = window.innerHeight;
         
         // Find which page is currently most visible
@@ -82,8 +83,9 @@
     // Update on page load
     updateActiveDot();
     
-    // Update on scroll
+    // Update on scroll - listen to both window and body
     window.addEventListener('scroll', updateActiveDot);
+    document.body.addEventListener('scroll', updateActiveDot);
     
     // Update on resize
     window.addEventListener('resize', updateActiveDot);
