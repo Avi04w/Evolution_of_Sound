@@ -1,4 +1,9 @@
 /* --- Global layout --- */
+html, body {
+    height: 100%;
+    overflow: hidden; /* <- this removes any extra scroll BELOW the scroller */
+}
+
 body {
     font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
     margin: 0;
@@ -42,8 +47,7 @@ main {
 }
 
 .text-block {
-    max-width: 800px;
-    margin-bottom: 1rem;
+    max-width: 1000px;
     text-align: center;
 }
 
@@ -61,7 +65,6 @@ main {
 /* --- Visualization containers --- */
 .chart-space {
     width: 100%;
-    max-width: 1400px;     /* your preferred width */
     margin: 0 auto;        /* center container horizontally */
     text-align: center;
 }
@@ -91,9 +94,10 @@ svg {
     position: relative;
 }
 
-.geographical-embed {
+.geographical-embed,
+.universe-embed {
     width: 100%;
-    height: 90vh; /* take up 90% of viewport height */
+    height: 99vh; /* take up 90% of viewport height */
     min-height: 700px; /* fallback for smaller screens */
     border: none;
     border-radius: 10px;
@@ -111,13 +115,7 @@ svg {
 
 
 /* --- Footer --- */
-footer {
-    text-align: center;
-    font-size: 0.9rem;
-    color: #777;
-    padding: 2rem 0;
-    border-top: 1px solid #eee;
-}
+
 /* === snap scrolling (final) === */
 html, body { height: 100%; margin: 0; }
 :root { scroll-behavior: smooth; }
@@ -145,11 +143,71 @@ html, body { height: 100%; margin: 0; }
 .vis-section.is-active { opacity: 1; }
 
 /* iframe sizing within a snap section (fits under 100vh) */
-.geographical-embed {
-    width: 100%;
-    height: 70vh;
-    min-height: 560px;
-    border: none;
-}
+/*.geographical-embed {*/
+/*    width: 100%;*/
+/*    height: 70vh;*/
+/*    min-height: 560px;*/
+/*    border: none;*/
+/*}*/
 
 /* keep your existing styles above as-is */
+
+/* Fixed Spotify widget at bottom-right */
+#spotify-player-container {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    gap: 8px;
+    pointer-events: auto;
+    padding: 6px;
+    background: transparent;
+    border-radius: 12px;
+}
+
+
+/* Hide button inside container */
+.spotify-hide-btn {
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+}
+
+/* Floating show button when hidden */
+#spotify-show-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 9999;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #1db954;
+    color: #fff;
+    border: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    #spotify-player-container { right: 8px; bottom: 8px; }
+    .spotify-embed { width: 260px; height: 72px; }
+    #spotify-show-btn { right: 8px; bottom: 8px; }
+}

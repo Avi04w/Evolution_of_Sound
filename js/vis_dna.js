@@ -1,7 +1,8 @@
 class VisDNA {
     constructor(selector, config = {}) {
         this.selector = selector;
-        this.width = config.width || 1000;
+        const parentWidth = d3.select(this.selector).node().getBoundingClientRect().width;
+        this.width = config.width || parentWidth - 200;
         this.height = config.height || 380;
         this.margin = { top: 30, right: 40, bottom: 110, left: 50 };
 
@@ -470,19 +471,33 @@ class VisDNA {
         const dnaContainer = d3.select("#vis-dna");
         const yearlyContainer = d3.select("#vis-dna-yearly");
 
-        // Hide DNA visualization smoothly
+        // Fade out the main DNA view
         dnaContainer.transition()
-            .duration(500)
+            .duration(600)
+            .ease(d3.easeCubicInOut)
             .style("opacity", 0)
-            .on("end", () => {
+            .on("end", async () => {
                 dnaContainer.style("display", "none");
-                yearlyContainer.style("display", "block")
-                    .style("opacity", 0);
 
-                // Clear previous yearly vis
+                // Prepare yearly container but keep hidden
+                yearlyContainer
+                    .style("display", "block")
+                    .style("opacity", 0)
+                    .style("transform", "translateY(30px)");
+
+                // Clear any previous yearly content
                 yearlyContainer.selectAll("*").remove();
 
-                // Instantiate yearly visualization
+                // --- Add a simple loading indicator ---
+                const loadingText = yearlyContainer.append("div")
+                    .attr("class", "yearly-loading")
+                    .style("text-align", "center")
+                    .style("margin-top", "100px")
+                    .style("font-size", "16px")
+                    .style("color", "#555")
+                    .text("Loading top songs...");
+
+                // --- Instantiate yearly visualization and await render() completion ---
                 const yearlyVis = new VisDNAYearly("#vis-dna-yearly", {
                     width: 1100,
                     height: 520,
@@ -490,9 +505,18 @@ class VisDNA {
                     feature: this.feature
                 });
 
+                // Wait until the yearlyVis finishes its async data load
+                await yearlyVis.renderComplete;
+
+                // Remove loading text
+                loadingText.remove();
+
+                // --- Now fade in the yearly visualization ---
                 yearlyContainer.transition()
-                    .duration(600)
-                    .style("opacity", 1);
+                    .duration(900)
+                    .ease(d3.easeCubicOut)
+                    .style("opacity", 1)
+                    .style("transform", "translateY(0)");
             });
     }
 

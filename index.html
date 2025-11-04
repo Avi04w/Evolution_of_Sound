@@ -20,10 +20,10 @@
 <div class="pageScroller">
 
     <!-- Intro -->
-    <header class="snap">
+    <!-- <header class="snap">
         <h1>The Evolution of Sound</h1>
-        <h2>Visualizing 30 Years of Pop Culture Through Data</h2>
-    </header>
+        <h2>Visualizing 40 Years of Pop Culture Through Data</h2>
+    </header> -->
 
     <!-- 🌐 Bubble Universe Visualization -->
     <section class="vis-section snap" id="bubble-section">
@@ -35,7 +35,7 @@
 
     <!-- 🎵 Vinyl Record Player Visualization -->
     <section>
-        <div id="record-player-container" class="chart-space">
+        <div id="record-player-container" class="chart-space" style="Display:none;">
             <div id="record-player-shell-out">
                 <div id="record-player-shell-mid">
                     <div id="record-player-shell-in">
@@ -52,13 +52,35 @@
     </section>
 
 
-    <section class="vis-section snap" id="universe-section">
-        <div class="text-block">
-            <h3>A Universe of Hits</h3>
-            <p>
-                Eric add ur vis here
-            </p>
+    <section id="spotify-player-section">
+        <div id="spotify-player-container" class="chart-space" style="text-align:center; display: none">
+            <button id="spotify-hide-btn" class="spotify-hide-btn" aria-label="Hide Spotify player">✕</button>
+            <iframe
+                    id="spotify-iframe"
+                    data-testid="embed-iframe"
+                    class="spotify-embed"
+                    src="https://open.spotify.com/embed/track/0VjIjW4GlUZAMYd2vXMi3b?utm_source=generator"
+                    width="20%" height="152"
+                    frameBorder="0"
+                    allowfullscreen=""
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy"
+                    title="Spotify Player"
+                    aria-label="Spotify Player">
+            </iframe>
         </div>
+        <button id="spotify-show-btn" title="Show Spotify player" aria-label="Show Spotify player" style="display:none">♫</button>
+    </section>
+
+
+    <section class="vis-section snap" id="universe-section">
+        <iframe
+            src="universe.html"
+            title="Music Universe - Interactive Visualization"
+            loading="lazy"
+            class="universe-embed"
+            allowfullscreen
+        ></iframe>
     </section>
 
     <!-- 🧬 DNA Helix Visualization Section -->
@@ -77,14 +99,14 @@
 
     <!-- 🌍 Geographical Music Explorer -->
     <section class="vis-section snap" id="geo-section">
-        <div class="text-block">
-            <h3>Global Soundscape</h3>
-            <p>
-                Explore how music has transcended borders and genres to connect people around the world.
-                This visualization highlights the global spread of popular songs and how musical tastes evolved geographically through the years.
-            </p>
-        </div>
-        <div id="vis-global" class="chart-space">
+<!--        <div class="text-block">-->
+<!--            <h3>Global Soundscape</h3>-->
+<!--            <p>-->
+<!--                Explore how music has transcended borders and genres to connect people around the world.-->
+<!--                This visualization highlights the global spread of popular songs and how musical tastes evolved geographically through the years.-->
+<!--            </p>-->
+<!--        </div>-->
+<!--        <div id="vis-global" class="chart-space">-->
             <iframe
                     src="geographical.html"
                     title="Geographical Music Explorer"
@@ -92,7 +114,7 @@
                     class="geographical-embed"
                     allowfullscreen
             ></iframe>
-        </div>
+<!--        </div>-->
     </section>
 
     <!-- 🎼 Genre Treemap Visualization -->
@@ -106,51 +128,33 @@
         </div>
     </section>
 
+    <section class="vis-section snap" id="conclusion-section">
+        <div class="text-block">
+            <h3>Conclusion</h3>
+            <p>Created by Avi Walia, Eric Liang, Kevin Hu, Ethan Liu, Taemin Kim • Data Source: Spotify, Kaggle Global Music Charts</p>
+            <p>
+                Through these visualizations, we've journeyed through the evolution of sound over the past 40 years.
+                From the cosmic bubble universe to the intricate DNA helix, each representation highlights the dynamic nature of music and its profound impact on culture.
+                As we continue to explore and innovate, music remains a powerful force that connects us all.
+            </p>
+        </div>
+
+    </section>
 
 </div> <!-- /.pageScroller -->
 
-<footer>
-    <p>Created by ___ • Data Source: Spotify, Kaggle Global Music Charts</p>
-</footer>
-
 <!-- JS Scripts -->
+<script src="js/spotify_player.js"></script>
 <script src="js/vinyl_record.js"></script>
 <script src="js/vis_bubble.js"></script>
 <script src="js/vis_dna_yearly.js"></script>
 <script src="js/vis_dna.js"></script>
 <script src="js/scroll_snap.js"></script>
 
-<script>
-    function fadeOut(el, ms = 250) {
-        return new Promise((resolve) => {
-            el.style.opacity = 1;
-            el.style.transition = `opacity ${ms}ms ease`;
-            requestAnimationFrame(() => {
-                el.style.opacity = 0;
-                setTimeout(() => {
-                    el.style.display = "none";
-                    resolve();
-                }, ms);
-            });
-        });
-    }
-
-    function fadeIn(el, ms = 250, display = "block") {
-        return new Promise((resolve) => {
-            el.style.opacity = 0;
-            el.style.display = display;
-            el.style.transition = `opacity ${ms}ms ease`;
-            requestAnimationFrame(() => {
-                el.style.opacity = 1;
-                setTimeout(resolve, ms);
-            });
-        });
-    }
-</script>
 
 <script src="js/vis2.js"></script>
 <script>
-    const dnaVis = new VisDNA("#vis-dna", { width: 1300, height: 360 });
+    const dnaVis = new VisDNA("#vis-dna", { height: 360 });
     dnaVis.start?.();
 </script>
 </body>

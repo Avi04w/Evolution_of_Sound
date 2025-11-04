@@ -51,7 +51,9 @@ const FEATURE_BOUNDS = {
 
             this.svg = container.append("svg")
                 .attr("width", this.width)
-                .attr("height", this.height + 100);
+                .attr("height", this.height + 100)
+                .style("display", "block")      // make it behave like a block element
+                .style("margin", "0 auto");
 
             this.title = this.svg.append("text")
                 .attr("x", this.width / 2)
@@ -72,7 +74,7 @@ const FEATURE_BOUNDS = {
 
             this.phase = 0;
             this.helixData = [];
-            this.render();
+            this.renderComplete = this.render();
         }
 
         async getTop10Songs(year, feature) {
@@ -90,6 +92,7 @@ const FEATURE_BOUNDS = {
             const aggregated = d3.rollups(
                 filtered,
                 v => ({
+                    id: v[0]?.id,
                     weeks_on_board: d3.max(v, d => d["weeks-on-board"] || 0),
                     avg_value: d3.mean(v, d => d[feature] ?? 0)
                 }),
@@ -110,6 +113,7 @@ const FEATURE_BOUNDS = {
                         rank: i + 1,
                         track,
                         artists,
+                        id: vals.id,
                         weeks_on_board: vals.weeks_on_board,
                         value: vals.avg_value
                     };
@@ -121,6 +125,14 @@ const FEATURE_BOUNDS = {
             if (!data.length) return;
 
             this.title.text(`Top 10 Longest Charting Songs of ${this.year} • ${this.feature.charAt(0).toUpperCase() + this.feature.slice(1)}`);
+
+            this.svg.append("text")
+                .attr("x", this.width / 2)
+                .attr("y", 50)
+                .attr("text-anchor", "middle")
+                .attr("font-size", 13)
+                .attr("fill", "#666")
+                .text("Click on a title to hear the song");
 
             const colorScale = this.colorScales[this.feature];
             const [min, max] = FEATURE_BOUNDS[this.feature];
@@ -135,12 +147,12 @@ const FEATURE_BOUNDS = {
             const helixHeight = ((this.height - this.margin.top - this.margin.bottom - 60) / rows) * verticalSpacingFactor;
 
             const g = this.svg.append("g")
-                .attr("transform", `translate(${this.margin.left}, ${this.margin.top + 40})`);
+                .attr("transform", `translate(${this.margin.left}, ${this.margin.top + 60})`);
 
             this.helixData = data.map((d, i) => {
                 const col = i % cols;
                 const row = Math.floor(i / cols);
-                const xOffset = col * (helixWidth * horizontalCompression) + helixWidth / 2;
+                const xOffset = col * (helixWidth * horizontalCompression) + helixWidth / 2 + 35;
                 const yOffset = row * helixHeight + 30;
 
                 const group = g.append("g")
@@ -160,6 +172,20 @@ const FEATURE_BOUNDS = {
                         .attr("text-anchor", "middle")
                         .attr("font-size", 11.5)
                         .attr("font-weight", 600)
+                        .on("click", () => {
+                            if (d.id) {
+                                showSpotifyPlayer(d.id);
+                            } else {
+                                console.warn("No Spotify ID found for", d.track);
+                            }
+                        })
+                        .on("mouseover", function() {
+                            d3.select(this).attr("fill", "#00e676");
+                            d3.select(this).style("cursor", "pointer");
+                        })
+                        .on("mouseout", function() {
+                            d3.select(this).attr("fill", "#000000");
+                        })
                         .text(firstPart);
 
                     group.append("text")
@@ -168,6 +194,20 @@ const FEATURE_BOUNDS = {
                         .attr("text-anchor", "middle")
                         .attr("font-size", 11.5)
                         .attr("font-weight", 600)
+                        .on("click", () => {
+                            if (d.id) {
+                                showSpotifyPlayer(d.id);
+                            } else {
+                                console.warn("No Spotify ID found for", d.track);
+                            }
+                        })
+                        .on("mouseover", function() {
+                            d3.select(this).attr("fill", "#00e676");
+                            d3.select(this).style("cursor", "pointer");
+                        })
+                        .on("mouseout", function() {
+                            d3.select(this).attr("fill", "#000000");
+                        })
                         .text(secondPart);
                 } else {
                     group.append("text")
@@ -176,6 +216,20 @@ const FEATURE_BOUNDS = {
                         .attr("text-anchor", "middle")
                         .attr("font-size", 11.5)
                         .attr("font-weight", 600)
+                        .on("click", () => {
+                            if (d.id) {
+                                showSpotifyPlayer(d.id);
+                            } else {
+                                console.warn("No Spotify ID found for", d.track);
+                            }
+                        })
+                        .on("mouseover", function() {
+                            d3.select(this).attr("fill", "#00e676");
+                            d3.select(this).style("cursor", "pointer");
+                        })
+                        .on("mouseout", function() {
+                            d3.select(this).attr("fill", "#000000");
+                        })
                         .text(trackText);
                 }
 
@@ -323,7 +377,8 @@ const FEATURE_BOUNDS = {
             //     if (this.title) this.title.raise();
             //  }
 
-             this.animate();
+            this.animate();
+            return Promise.resolve();
         }
 
         animate() {
@@ -385,14 +440,18 @@ const FEATURE_BOUNDS = {
             const yearlyContainer = d3.select("#vis-dna-yearly");
 
             yearlyContainer.transition()
-                .duration(400)
+                .duration(800)
+                .ease(d3.easeCubicInOut)
+                .style("transform", "translateY(-30px)")
                 .style("opacity", 0)
                 .on("end", () => {
                     yearlyContainer.style("display", "none");
                     dnaContainer.style("display", "block")
                         .style("opacity", 0)
+                        .style("transform", "translateY(30px)")
                         .transition()
-                        .duration(450)
+                        .duration(800)
+                        .ease(d3.easeCubicOut)
                         .style("opacity", 1);
                 });
         }
