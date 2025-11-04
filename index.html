@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/bubble.css">
     <link rel="stylesheet" href="css/record_player.css">
-    <link rel="stylesheet" href="css/vis2.css">
+    <link rel="stylesheet" href="css/treemap.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 
 </head>
@@ -75,11 +75,11 @@
 
     <section class="vis-section snap" id="universe-section">
         <iframe
-            src="universe.html"
-            title="Music Universe - Interactive Visualization"
-            loading="lazy"
-            class="universe-embed"
-            allowfullscreen
+                src="universe.html"
+                title="Music Universe - Interactive Visualization"
+                loading="lazy"
+                class="universe-embed"
+                allowfullscreen
         ></iframe>
     </section>
 
@@ -115,7 +115,7 @@
             <p class="chart-description">
                 A treemap showing how dominant music genres shaped the charts each year.
             </p>
-            <div id="vis2" class="chart-space"></div>
+            <div id="treemap" class="chart-space"></div>
         </div>
     </section>
 
@@ -143,7 +143,7 @@
 <script src="js/scroll_snap.js"></script>
 
 
-<script src="js/vis2.js"></script>
+<script src="js/treemap.js"></script>
 <script>
     const dnaVis = new VisDNA("#vis-dna", { height: 360 });
     dnaVis.start?.();

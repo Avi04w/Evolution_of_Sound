@@ -21,7 +21,7 @@
 /* ======================================================
    HOST PANEL / LAYOUT
    ====================================================== */
-.chart-container:has(#vis2) {
+.chart-container:has(#treemap) {
     position: relative;
     padding: 28px 24px 48px;
     border-radius: 16px;
@@ -29,7 +29,7 @@
 }
 
 /* big centered title with inline year select */
-.chart-container:has(#vis2) .chart-title {
+.chart-container:has(#treemap) .chart-title {
     position: relative;
     z-index: 3;                         /* above the card/SVG */
     /*color: #fff;*/
@@ -50,7 +50,7 @@
 }
 
 /* dropdown styling */
-.chart-container:has(#vis2) .chart-title select {
+.chart-container:has(#treemap) .chart-title select {
     background: var(--bg-2);
     color: var(--text-0);
     border: 1px solid var(--line-1);
@@ -63,7 +63,7 @@
     transition: box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-.chart-container:has(#vis2) .chart-title select:focus {
+.chart-container:has(#treemap) .chart-title select:focus {
     outline: none;
     box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent-1) 35%, transparent);
     border-color: color-mix(in oklab, var(--accent-1) 50%, var(--line-1));
@@ -72,14 +72,14 @@
 /* ======================================================
    TREEMAP CARD STRUCTURE
    ====================================================== */
-#vis2 {
+#treemap {
     position: relative;
     z-index: 1; /* header sits above */
     max-width: 100%;
     margin: 0 auto;
 }
 
-#vis2 .vis2-card {
+#treemap .treemap-card {
     background: var(--bg-1);
     border: 1px solid var(--line-1);
     border-radius: 18px;
@@ -95,7 +95,7 @@
 }
 
 /* sticky toolbar (breadcrumb or legend area) */
-#vis2 .vis2-toolbar {
+#treemap .treemap-toolbar {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -114,7 +114,7 @@
 }
 
 /* breadcrumb “pills” */
-#vis2 .crumb {
+#treemap .crumb {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -128,7 +128,7 @@
     transition: transform 0.15s ease, background-color 0.15s ease,
     border-color 0.15s ease;
 }
-#vis2 .crumb:hover {
+#treemap .crumb:hover {
     transform: translateY(-1px);
     border-color: var(--line-2);
     color: var(--text-0);
@@ -137,7 +137,7 @@
 /* ======================================================
    SCROLLABLE WINDOW + SVG AREA
    ====================================================== */
-#vis2 .vis2-scroll {
+#treemap .treemap-scroll {
     flex: 1 1 auto;
     overflow-y: auto;
     overflow-x: hidden;
@@ -151,12 +151,12 @@
 }
 
 /* hide overflow during zoom transitions */
-#vis2 .vis2-scroll {
+#treemap .treemap-scroll {
     overflow: hidden;
 }
 
 /* SVG styling */
-#vis2 .vis2-scroll > svg {
+#treemap .treemap-scroll > svg {
     display: block;
     position: relative;
     z-index: 0;
@@ -170,11 +170,11 @@
 /* ======================================================
    TREEMAP NODE STYLING
    ====================================================== */
-#vis2 .node {
+#treemap .node {
     outline: none;
 }
 
-#vis2 .node-rect {
+#treemap .node-rect {
     rx: 10px;
     ry: 10px;
     stroke: color-mix(in oklab, #000 18%, var(--line-2));
@@ -184,23 +184,23 @@
     filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.18));
 }
 
-#vis2 .node:hover .node-rect {
+#treemap .node:hover .node-rect {
     transform: translateY(-1px);
 }
 
-#vis2 .node:focus-visible .node-rect {
+#treemap .node:focus-visible .node-rect {
     stroke: var(--accent-1);
     stroke-width: 2;
     filter: none;
 }
 
 /* fade non-hover siblings */
-#vis2 .node-dim {
+#treemap .node-dim {
     opacity: 0.35;
 }
 
 /* label text styling */
-#vis2 .node-label {
+#treemap .node-label {
     font-weight: 700;
     fill: var(--text-0);
     pointer-events: none;
@@ -210,14 +210,14 @@
     letter-spacing: 0.2px;
 }
 
-#vis2 .node-label--sm {
+#treemap .node-label--sm {
     font-weight: 600;
     fill: var(--text-1);
     stroke: rgba(0, 0, 0, 0.3);
     stroke-width: 1.5px;
 }
 
-#vis2 .node-sub {
+#treemap .node-sub {
     fill: var(--text-2);
     font-weight: 500;
     pointer-events: none;
@@ -228,7 +228,7 @@
 /* ======================================================
    TOOLTIP + LEGEND
    ====================================================== */
-#vis2 #vis2-tooltip {
+#treemap #treemap-tooltip {
     position: fixed;
     z-index: 200;
     pointer-events: none;
@@ -246,12 +246,12 @@
 }
 
 /* legend chips */
-#vis2 .legend {
+#treemap .legend {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
 }
-#vis2 .legend .chip {
+#treemap .legend .chip {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -262,7 +262,7 @@
     background: var(--bg-2);
     border-radius: 999px;
 }
-#vis2 .legend .dot {
+#treemap .legend .dot {
     width: 10px;
     height: 10px;
     border-radius: 999px;
@@ -273,10 +273,10 @@
    REDUCED MOTION
    ====================================================== */
 @media (prefers-reduced-motion: reduce) {
-    #vis2 .node-rect,
-    #vis2 .crumb,
-    #vis2 .vis2-scroll,
-    #vis2 .chart-title select {
+    #treemap .node-rect,
+    #treemap .crumb,
+    #treemap .treemap-scroll,
+    #treemap .chart-title select {
         transition: none !important;
     }
 }
