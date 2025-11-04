@@ -35,7 +35,7 @@
 
     <!-- 🎵 Vinyl Record Player Visualization -->
     <section>
-        <div id="record-player-container" class="chart-space">
+        <div id="record-player-container" class="chart-space" style="Display:none;">
             <div id="record-player-shell-out">
                 <div id="record-player-shell-mid">
                     <div id="record-player-shell-in">
@@ -49,6 +49,27 @@
             <div id="record-player-arm"></div>
         </div>
         <audio id="player"></audio>
+    </section>
+
+
+    <section id="spotify-player-section">
+        <div id="spotify-player-container" class="chart-space" style="text-align:center; display: none">
+            <button id="spotify-hide-btn" class="spotify-hide-btn" aria-label="Hide Spotify player">✕</button>
+            <iframe
+                    id="spotify-iframe"
+                    data-testid="embed-iframe"
+                    class="spotify-embed"
+                    src="https://open.spotify.com/embed/track/0VjIjW4GlUZAMYd2vXMi3b?utm_source=generator"
+                    width="20%" height="152"
+                    frameBorder="0"
+                    allowfullscreen=""
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy"
+                    title="Spotify Player"
+                    aria-label="Spotify Player">
+            </iframe>
+        </div>
+        <button id="spotify-show-btn" title="Show Spotify player" aria-label="Show Spotify player" style="display:none">♫</button>
     </section>
 
 
@@ -121,37 +142,10 @@
 <script src="js/vis_dna.js"></script>
 <script src="js/scroll_snap.js"></script>
 
-<script>
-    function fadeOut(el, ms = 250) {
-        return new Promise((resolve) => {
-            el.style.opacity = 1;
-            el.style.transition = `opacity ${ms}ms ease`;
-            requestAnimationFrame(() => {
-                el.style.opacity = 0;
-                setTimeout(() => {
-                    el.style.display = "none";
-                    resolve();
-                }, ms);
-            });
-        });
-    }
-
-    function fadeIn(el, ms = 250, display = "block") {
-        return new Promise((resolve) => {
-            el.style.opacity = 0;
-            el.style.display = display;
-            el.style.transition = `opacity ${ms}ms ease`;
-            requestAnimationFrame(() => {
-                el.style.opacity = 1;
-                setTimeout(resolve, ms);
-            });
-        });
-    }
-</script>
 
 <script src="js/vis2.js"></script>
 <script>
-    const dnaVis = new VisDNA("#vis-dna", { width: 1300, height: 360 });
+    const dnaVis = new VisDNA("#vis-dna", { height: 360 });
     dnaVis.start?.();
 </script>
 </body>
