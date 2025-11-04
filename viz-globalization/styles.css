@@ -9,13 +9,13 @@ body {
   color: #222;
 }
 
-header {
-  padding: 1.5rem 2rem;
+.app-header {
+  padding: 1.25rem 1.75rem;
   background: #12131a;
   color: #f3f4f9;
 }
 
-header h1 {
+.app-header h1 {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 600;
@@ -24,13 +24,13 @@ header h1 {
 main {
   display: grid;
   grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr);
-  gap: 1.25rem;
-  padding: 1.75rem;
-  align-items: start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  align-items: stretch;
 }
 
 .panel {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.25rem;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(18, 19, 26, 0.08);
@@ -46,7 +46,14 @@ main {
 .panel--map {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.panel--stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
 }
 
 .map-header {
@@ -54,14 +61,14 @@ main {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .map-controls {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.6rem 1rem;
+  gap: 0.5rem 0.8rem;
   font-size: 0.82rem;
   color: #2d3143;
 }
@@ -101,17 +108,18 @@ main {
 .map-legends {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.6rem;
-  min-width: 140px;
+  min-width: 0;
 }
 
 .map-container {
   position: relative;
   width: 100%;
   overflow: hidden;
-  border-radius: 12px;
-  /* background: #eef0f7; */
+  border-radius: 10px;
+  min-height: 500px;
+  flex: 1 1 auto;
 }
 
 #map {
@@ -151,11 +159,11 @@ main {
 }
 
 .pin-legend--inline {
-  margin-top: 0.75rem;
-  padding: 0.5rem 0.6rem;
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.55rem;
   background: #f6f7fb;
   border-radius: 8px;
-  border: 1px solid rgba(40, 44, 60, 0.08);
+  border: 1px solid rgba(40, 44, 60, 0.06);
   width: 100%;
 }
 
@@ -205,6 +213,7 @@ main {
 
 .sparkline-section {
   margin-top: 1.5rem;
+  flex: 1 1 auto;
 }
 
 .sparkline-heading {
@@ -217,8 +226,9 @@ main {
 .sparkline-group {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   width: 100%;
+  flex: 1 1 auto;
 }
 
 .sparkline-card {
@@ -317,7 +327,7 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 0.75rem;
+  padding: 0.55rem 0.7rem;
   border-radius: 8px;
   background: #f6f7fb;
 }
@@ -374,12 +384,12 @@ footer {
 .timeline-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
 .control-button {
-  padding: 0.5rem 1rem;
+  padding: 0.45rem 0.9rem;
   border: 1px solid #d0d3e0;
   border-radius: 6px;
   background: #fff;
@@ -407,7 +417,7 @@ footer {
 
 .timeline-range {
   width: 100%;
-  flex: 1 1 auto;
+  flex: 1 1 140px;
 }
 
 .control-label--small input {
@@ -417,11 +427,11 @@ footer {
 }
 
 .control-label--timeline {
-  min-width: 120px;
+  min-width: 110px;
 }
 
 .control-label--timeline select {
-  min-width: 120px;
+  min-width: 110px;
 }
 
 .footer-slot h3 {

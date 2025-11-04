@@ -137,7 +137,9 @@ let excludeUs = EXCLUDE_US;
 let topPinN = TOP_PIN_N;
 let windowWeeks = WINDOW_WEEKS;
 
-const choroplethColorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, 1]);
+const choroplethColorScale = d3
+  .scaleSequential((t) => d3.interpolateBlues(0.15 + 0.85 * t))
+  .domain([0, 1]);
 const neutralPinColor = '#444';
 
 const regionColors = {
