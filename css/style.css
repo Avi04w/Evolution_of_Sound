@@ -162,7 +162,9 @@ html, body { height: 100%; margin: 0; }
     align-items: center;
     justify-content: right;
     gap: 8px;
-    pointer-events: auto;
+    /* allow clicks to pass through the parts of this container that aren't interactive
+       (prevents the invisible container from blocking content underneath) */
+    pointer-events: none;
     padding: 6px;
     background: transparent;
     border-radius: 12px;
@@ -186,7 +188,12 @@ html, body { height: 100%; margin: 0; }
     padding: 0;
 }
 
-/* Floating show button when hidden */
+/* Ensure interactive children still receive pointer events while the container itself is click-through */
+#spotify-player-container > * {
+    pointer-events: auto;
+}
+
+/* The floating show button lives outside the container; make sure it is clickable */
 #spotify-show-btn {
     position: fixed;
     bottom: 16px;

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Billboard Origins — Globalization Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header" hidden>
+      <h1>Billboard Origins — Globalization Prototype</h1>
+    </header>
+    <main>
+      <section class="panel panel--map">
+        <div class="map-header">
+          <h2>Global Origins Map</h2>
+          <div class="map-controls" data-role="map-controls">
+            <label class="control-label">
+              Pin colors
+              <select id="pin-color-mode" data-role="pin-color-mode">
+                <option value="origin-region">Origin region</option>
+                <option value="genre-supergroup">Genre supergroup</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+            <label class="control-label">
+              Choropleth
+              <select id="choropleth-mode" data-role="choropleth-mode">
+                <option value="weekly-share">Weekly share</option>
+                <option value="cumulative-share">Cumulative share</option>
+                <option value="first-activation">First activation</option>
+              </select>
+            </label>
+            <label class="control-checkbox">
+              <input type="checkbox" id="exclude-us" data-role="exclude-us" />
+              Exclude US
+            </label>
+            <label class="control-label control-label--small">
+              Top pins
+              <input
+                type="number"
+                id="top-pin-count"
+                data-role="top-pin-count"
+                min="1"
+                max="50"
+                step="1"
+                value="10"
+              />
+            </label>
+            <label class="control-label control-label--small">
+              Ghost window (weeks)
+              <input
+                type="number"
+                id="window-weeks"
+                data-role="window-weeks"
+                min="0"
+                max="26"
+                step="1"
+                value="8"
+              />
+            </label>
+          </div>
+          <div class="map-legends">
+            <div class="map-legend" data-role="map-legend"></div>
+          </div>
+        </div>
+        <div class="map-container">
+          <svg id="map" width="960" height="540" aria-labelledby="map-title" role="img">
+            <title id="map-title">Rank-weighted origin shares by country</title>
+          </svg>
+          <div class="map-tooltip" data-role="map-tooltip" hidden></div>
+        </div>
+        <div class="pin-legend pin-legend--inline" data-role="pin-legend"></div>
+      </section>
+      <section class="panel panel--stats">
+        <h2>Weekly Stats</h2>
+        <div class="stats-card" data-role="stats-card">
+          <div class="stat-row">
+            <span class="stat-label">Non-US Share</span>
+            <span class="stat-value" data-stat="nonUSShare">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Unique Origins</span>
+            <span class="stat-value" data-stat="uniqueOrigins">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Shannon Entropy H</span>
+            <span class="stat-value" data-stat="entropy">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Collaboration Rate</span>
+            <span class="stat-value" data-stat="collabRate">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Cumulative Origins So Far</span>
+            <span class="stat-value" data-stat="cumulativeOrigins">—</span>
+          </div>
+        </div>
+        <div class="sparkline-section">
+          <h3 class="sparkline-heading">Trend Overview</h3>
+          <div class="sparkline-group" data-role="sparklines">
+            <div class="sparkline-card" data-sparkline="nonUSShare">
+              <div class="sparkline-card__header">
+                <span class="sparkline-title">Non-US Share</span>
+                <span class="sparkline-value" data-sparkline-value="nonUSShare">—</span>
+              </div>
+              <svg
+                class="sparkline-chart"
+                width="320"
+                height="70"
+                role="img"
+                aria-label="Non-US Share over time"
+              ></svg>
+            </div>
+            <div class="sparkline-card" data-sparkline="uniqueOrigins">
+              <div class="sparkline-card__header">
+                <span class="sparkline-title">Unique Origins</span>
+                <span class="sparkline-value" data-sparkline-value="uniqueOrigins">—</span>
+              </div>
+              <svg
+                class="sparkline-chart"
+                width="320"
+                height="70"
+                role="img"
+                aria-label="Unique Origins over time"
+              ></svg>
+            </div>
+            <div class="sparkline-card" data-sparkline="entropy">
+              <div class="sparkline-card__header">
+                <span class="sparkline-title">Shannon Entropy H</span>
+                <span class="sparkline-value" data-sparkline-value="entropy">—</span>
+              </div>
+              <svg
+                class="sparkline-chart"
+                width="320"
+                height="70"
+                role="img"
+                aria-label="Shannon Entropy over time"
+              ></svg>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="timeline-bar">
+        <span class="timeline-date" data-role="week-label">—</span>
+        <div class="timeline-controls">
+          <button type="button" class="control-button" data-role="play-pause">Play</button>
+          <input
+            type="range"
+            class="timeline-range"
+            data-role="week-range"
+            min="0"
+            max="0"
+            step="1"
+            value="0"
+            aria-label="Week"
+          />
+          <span class="timeline-index" data-role="week-index">0 / 0</span>
+          <label class="control-label control-label--small control-label--timeline">
+            Speed
+            <select id="playback-speed" data-role="playback-speed">
+              <option value="100">Fast</option>
+              <option value="200" selected>Normal</option>
+              <option value="400">Slow</option>
+              <option value="800">Very Slow</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </main>
+
+    <div class="sparkline-tooltip" data-role="sparkline-tooltip" hidden></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

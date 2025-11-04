@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/bubble.css">
     <link rel="stylesheet" href="css/record_player.css">
-    <link rel="stylesheet" href="css/vis2.css">
+    <link rel="stylesheet" href="css/treemap.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 
 </head>
@@ -40,7 +40,7 @@
                 <div id="record-player-shell-mid">
                     <div id="record-player-shell-in">
                         <div id="record-player-image-container">
-                            <img id="record-player-image" style="display:none;" src="" class="unselectable" />
+                            <img id="record-player-image" style="display:none;" src="" alt="Record player" class="unselectable" />
                             <div id="record-player-pause" class="unselectable"><span></span></div>
                         </div>
                     </div>
@@ -52,34 +52,14 @@
     </section>
 
 
-    <section id="spotify-player-section">
-        <div id="spotify-player-container" class="chart-space" style="text-align:center; display: none">
-            <button id="spotify-hide-btn" class="spotify-hide-btn" aria-label="Hide Spotify player">✕</button>
-            <iframe
-                    id="spotify-iframe"
-                    data-testid="embed-iframe"
-                    class="spotify-embed"
-                    src="https://open.spotify.com/embed/track/0VjIjW4GlUZAMYd2vXMi3b?utm_source=generator"
-                    width="20%" height="152"
-                    frameBorder="0"
-                    allowfullscreen=""
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    loading="lazy"
-                    title="Spotify Player"
-                    aria-label="Spotify Player">
-            </iframe>
-        </div>
-        <button id="spotify-show-btn" title="Show Spotify player" aria-label="Show Spotify player" style="display:none">♫</button>
-    </section>
-
 
     <section class="vis-section snap" id="universe-section">
         <iframe
-            src="universe.html"
-            title="Music Universe - Interactive Visualization"
-            loading="lazy"
-            class="universe-embed"
-            allowfullscreen
+                src="universe.html"
+                title="Music Universe - Interactive Visualization"
+                loading="lazy"
+                class="universe-embed"
+                allowfullscreen
         ></iframe>
     </section>
 
@@ -99,22 +79,13 @@
 
     <!-- 🌍 Geographical Music Explorer -->
     <section class="vis-section snap" id="geo-section">
-<!--        <div class="text-block">-->
-<!--            <h3>Global Soundscape</h3>-->
-<!--            <p>-->
-<!--                Explore how music has transcended borders and genres to connect people around the world.-->
-<!--                This visualization highlights the global spread of popular songs and how musical tastes evolved geographically through the years.-->
-<!--            </p>-->
-<!--        </div>-->
-<!--        <div id="vis-global" class="chart-space">-->
-            <iframe
-                    src="geographical.html"
-                    title="Geographical Music Explorer"
-                    loading="lazy"
-                    class="geographical-embed"
-                    allowfullscreen
-            ></iframe>
-<!--        </div>-->
+        <iframe
+            src="viz-globalization/index.html"
+            title="Global Billboard Origins Prototype"
+            loading="lazy"
+            class="geographical-embed"
+            allowfullscreen
+        ></iframe>
     </section>
 
     <!-- 🎼 Genre Treemap Visualization -->
@@ -124,7 +95,7 @@
             <p class="chart-description">
                 A treemap showing how dominant music genres shaped the charts each year.
             </p>
-            <div id="vis2" class="chart-space"></div>
+            <div id="treemap" class="chart-space"></div>
         </div>
     </section>
 
@@ -143,6 +114,26 @@
 
 </div> <!-- /.pageScroller -->
 
+<section id="spotify-player-section">
+    <div id="spotify-player-container" class="chart-space" style="text-align:center; display: none">
+        <button id="spotify-hide-btn" class="spotify-hide-btn" aria-label="Hide Spotify player">✕</button>
+        <iframe
+                id="spotify-iframe"
+                data-testid="embed-iframe"
+                class="spotify-embed"
+                src="https://open.spotify.com/embed/track/0VjIjW4GlUZAMYd2vXMi3b?utm_source=generator"
+                width="20%" height="152"
+                frameBorder="0"
+                allowfullscreen=""
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+                title="Spotify Player"
+                aria-label="Spotify Player">
+        </iframe>
+    </div>
+    <button id="spotify-show-btn" title="Show Spotify player" aria-label="Show Spotify player" style="display:none">♫</button>
+</section>
+
 <!-- JS Scripts -->
 <script src="js/spotify_player.js"></script>
 <script src="js/vinyl_record.js"></script>
@@ -152,7 +143,7 @@
 <script src="js/scroll_snap.js"></script>
 
 
-<script src="js/vis2.js"></script>
+<script src="js/treemap.js"></script>
 <script>
     const dnaVis = new VisDNA("#vis-dna", { height: 360 });
     dnaVis.start?.();
