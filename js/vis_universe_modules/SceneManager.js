@@ -30,14 +30,12 @@ export class SceneManager {
         this.featureColors = {
             'danceability': 0xFF0000,      // Red
             'energy': 0xFF7F00,            // Orange
-            'key': 0xFFFF00,               // Yellow
-            'loudness': 0x00FF00,          // Green
-            'mode': 0x00FFFF,              // Cyan
-            'speechiness': 0x0000FF,       // Blue
-            'acousticness': 0x7F00FF,      // Purple
-            'instrumentalness': 0xFF00FF,  // Magenta
-            'liveness': 0xFFC0CB,          // Pink
-            'valence': 0xA52A2A            // Brown
+            'loudness': 0xFFFF00,          // Yellow
+            'speechiness': 0x00FF00,       // Green
+            'acousticness': 0x0000FF,      // Blue
+            'instrumentalness': 0x7F00FF,  // Purple
+            'valence': 0xFF00FF,           // Magenta
+            'tempo': 0x00FFFF              // Cyan
         };
         
         // Animation

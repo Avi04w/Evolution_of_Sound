@@ -24,16 +24,14 @@ export const VIRIDIS_COLORS = [
  * Audio features that can be used for color encoding
  */
 export const AUDIO_FEATURES = [
-    'danceability', 
-    'energy', 
-    'key', 
-    'loudness', 
-    'mode', 
-    'speechiness', 
-    'acousticness', 
-    'instrumentalness', 
-    'liveness', 
-    'valence'
+    'danceability',
+    'energy',
+    'loudness',
+    'speechiness',
+    'acousticness',
+    'instrumentalness',
+    'valence',
+    'tempo'
 ];
 
 /**
