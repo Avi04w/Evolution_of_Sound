@@ -29,7 +29,6 @@ export const AUDIO_FEATURES = [
     'loudness',
     'speechiness',
     'acousticness',
-    'instrumentalness',
     'valence',
     'tempo'
 ];

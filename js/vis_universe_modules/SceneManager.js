@@ -33,8 +33,7 @@ export class SceneManager {
             'loudness': 0xFFFF00,          // Yellow
             'speechiness': 0x00FF00,       // Green
             'acousticness': 0x0000FF,      // Blue
-            'instrumentalness': 0x7F00FF,  // Purple
-            'valence': 0xFF00FF,           // Magenta
+            'valence': 0x7F00FF,           // Purple
             'tempo': 0x00FFFF              // Cyan
         };
         
