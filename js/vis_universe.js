@@ -162,6 +162,7 @@ class MusicUniverseVisualization {
             this.uiManager = new UIManager(this.sceneManager, this.dataManager);
             this.uiManager.setCallbacks({
                 onColorChange: (feature) => this.updateColors(feature, true),
+                onClearColor: () => this.updateColors('none', true),
                 onGenreFilter: (genre) => this.filterByGenre(genre),
                 onClearGenre: () => {
                     if (this.interactionManager) {

@@ -10,6 +10,7 @@ export class UIManager {
         
         // Callbacks
         this.onColorChangeCallback = null;
+        this.onClearColorCallback = null;
         this.onGenreFilterCallback = null;
         this.onClearGenreCallback = null;
         this.onPlayTimelineCallback = null;
@@ -25,6 +26,7 @@ export class UIManager {
      */
     setCallbacks(callbacks) {
         this.onColorChangeCallback = callbacks.onColorChange;
+        this.onClearColorCallback = callbacks.onClearColor;
         this.onGenreFilterCallback = callbacks.onGenreFilter;
         this.onClearGenreCallback = callbacks.onClearGenre;
         this.onPlayTimelineCallback = callbacks.onPlayTimeline;
@@ -56,6 +58,7 @@ export class UIManager {
      */
     setupColorDropdown() {
         const dropdown = document.getElementById('color-feature');
+        const clearButton = document.getElementById('clear-color');
         if (!dropdown) return;
         
         dropdown.addEventListener('change', () => {
@@ -80,7 +83,26 @@ export class UIManager {
             if (this.onColorChangeCallback) {
                 this.onColorChangeCallback(selectedValue);
             }
+            
+            // Show clear button
+            if (clearButton && selectedValue !== 'none') {
+                clearButton.classList.remove('hidden');
+            }
         });
+        
+        // Clear color button
+        if (clearButton) {
+            clearButton.addEventListener('click', () => {
+                // Reset dropdown to placeholder
+                dropdown.value = '';
+                dropdown.classList.add('placeholder-active');
+                clearButton.classList.add('hidden');
+                
+                if (this.onClearColorCallback) {
+                    this.onClearColorCallback();
+                }
+            });
+        }
     }
     
     /**
