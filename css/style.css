@@ -1,4 +1,9 @@
 /* --- Global layout --- */
+html, body {
+    height: 100%;
+    overflow: hidden; /* <- this removes any extra scroll BELOW the scroller */
+}
+
 body {
     font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
     margin: 0;
