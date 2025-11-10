@@ -47,19 +47,42 @@ main {
 }
 
 .text-block {
-    max-width: 1000px;
+    width: 75%;
     text-align: center;
 }
 
 .text-block h3 {
     font-size: 1.8rem;
-    margin-bottom: 0.5rem;
     color: #222;
 }
 
 .text-block p {
     font-size: 1rem;
     color: #555;
+}
+
+#scroll-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1001;
+    color: rgba(0, 0, 0, 0.4);
+    font-size: 14px;
+    animation: bounce 2s infinite;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+}
+
+#scroll-hint.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-10px); }
 }
 
 /* --- Visualization containers --- */
@@ -224,4 +247,76 @@ html, body { height: 100%; margin: 0; }
     #spotify-player-container { right: 8px; bottom: 8px; }
     .spotify-embed { width: 260px; height: 72px; }
     #spotify-show-btn { right: 8px; bottom: 8px; }
+}
+
+/* ---------- Feature Selection Section - Enhanced ---------- */
+#feature-selection-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+
+/* inner container */
+.intro-container {
+    position: relative;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(6px);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    padding: 1rem 2rem;
+    width: 80%;
+}
+
+/* headings */
+.intro-title {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+}
+
+.feature-section-title {
+    color: #111827;
+    font-size: 1.6rem;
+    font-weight: 600;
+}
+
+/* dropdown */
+#feature-select {
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    padding: 10px 10px 10px 10px;
+    font-size: 1rem;
+    color: #111;
+    background: linear-gradient(to right, #ffffff, #f9fafb);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+#feature-select:hover {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96,165,250,0.25);
+}
+
+/* feature description card */
+#feature-description {
+    margin-top: 1rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px 20px 0px 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+
+#feature-description p {
+    margin-top: 6px;
+    color: #374151;
+    line-height: 1.55;
 }

@@ -1,10 +1,10 @@
 const FEATURE_BOUNDS = {
-    acousticness: [0, 0.8],
+    acousticness: [0, 1],
     danceability: [0.20, 1],
-    energy:       [0.2, 1],
+    energy:       [0.1, 1],
     speechiness:  [0, 0.5],
-    loudness:     [-30, 0],
-    tempo:        [60, 190],
+    loudness:     [-16, 0],
+    tempo:        [60, 210],
     valence:      [0, 1]
 };
 
@@ -19,13 +19,13 @@ const FEATURE_BOUNDS = {
 
             // --- identical color scales ---
             this.colorScales = {
-                energy:       d3.scaleSequential(d3.interpolateRgb("#eaac6d", "#af3000")),
-                tempo:        d3.scaleSequential(d3.interpolateRgb("#d9a7a7", "#940000")),
+                energy:       d3.scaleSequential(d3.interpolateRgb("#bcffc4", "#1d4e00")),
+                tempo:        d3.scaleSequential(d3.interpolateRgb("#ffc8c8", "#770000")),
                 acousticness: d3.scaleSequential(d3.interpolateRgb("#d5e9ff", "#012b42")),
-                valence:      d3.scaleSequential(d3.interpolateRgb("#083957", "#ded700")),
+                valence:      d3.scaleSequential(d3.interpolateRgb("#005283", "#ded700")),
                 danceability: d3.scaleSequential(d3.interpolateRgb("#ffc7de", "#230465")),
                 speechiness:  d3.scaleSequential(d3.interpolateRgb("#ffe9b6", "#6a4c00")),
-                loudness:     d3.scaleSequential(d3.interpolateRgb("#000000", "#a0a0a1"))
+                loudness:     d3.scaleSequential(d3.interpolateRgb("#bafff5", "#007c66"))
             };
 
             // short human-readable descriptions (used by the legend description)
@@ -99,15 +99,20 @@ const FEATURE_BOUNDS = {
                 this.rawData = lines.map(line => JSON.parse(line));
             }
 
-            const filtered = this.rawData.filter(d => {
+            // all songs for the year (with name & artists)
+            const yearAll = this.rawData.filter(d => {
                 const songYear = new Date(d.date).getFullYear();
-                const peakRank = d["peak-rank"] != null ? Number(d["peak-rank"]) : NaN;
-                return songYear === year && d.name && d.artists && peakRank === 1;
-
+                return songYear === year && d.name && d.artists;
             });
 
-            const aggregated = d3.rollups(
-                filtered,
+            // songs that reached peak rank 1
+            const peakFiltered = yearAll.filter(d => {
+                const peakRank = d["peak-rank"] != null ? Number(d["peak-rank"]) : NaN;
+                return peakRank === 1;
+            });
+
+            const aggregatedPeak = d3.rollups(
+                peakFiltered,
                 v => ({
                     id: v[0]?.id,
                     weeks_on_board: d3.max(v, d => d["weeks-on-board"] || 0),
@@ -119,8 +124,41 @@ const FEATURE_BOUNDS = {
                 }
             );
 
-            return aggregated
-                .sort((a, b) => b[1].weeks_on_board - a[1].weeks_on_board)
+            // sort peak entries by weeks on board
+            const sortedPeak = aggregatedPeak
+                .sort((a, b) => b[1].weeks_on_board - a[1].weeks_on_board);
+
+            // prepare final list, fill up to 10 entries
+            const finalList = sortedPeak.slice(0, 10);
+
+            if (finalList.length < 10) {
+                // roll up all year songs (regardless of peak rank)
+                const aggregatedAll = d3.rollups(
+                    yearAll,
+                    v => ({
+                        id: v[0]?.id,
+                        weeks_on_board: d3.max(v, d => d["weeks-on-board"] || 0),
+                        avg_value: d3.mean(v, d => d[feature] ?? 0)
+                    }),
+                    d => {
+                        const artistList = Array.isArray(d.artists) ? d.artists.join(", ") : d.artists;
+                        return `${d.name} - ${artistList}`;
+                    }
+                );
+
+                const sortedAll = aggregatedAll.sort((a, b) => b[1].weeks_on_board - a[1].weeks_on_board);
+
+                const selectedKeys = new Set(finalList.map(d => d[0]));
+                for (const item of sortedAll) {
+                    if (finalList.length >= 10) break;
+                    if (!selectedKeys.has(item[0])) {
+                        finalList.push(item);
+                        selectedKeys.add(item[0]);
+                    }
+                }
+            }
+
+            return finalList
                 .slice(0, 10)
                 .map(([key, vals], i) => {
                     const splitIdx = key.lastIndexOf(" - ");
@@ -141,7 +179,7 @@ const FEATURE_BOUNDS = {
             const data = await this.getTop10Songs(this.year, this.feature);
             if (!data.length) return;
 
-            this.title.text(`Top 10 Longest Charting Songs of ${this.year} • ${this.feature.charAt(0).toUpperCase() + this.feature.slice(1)}`);
+            this.title.text(`Top 10 Longest Charting #1 Songs of ${this.year} • ${this.feature.charAt(0).toUpperCase() + this.feature.slice(1)}`);
 
             this.svg.append("text")
                 .attr("x", this.width / 2)

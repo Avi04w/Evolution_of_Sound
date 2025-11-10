@@ -1,6 +1,7 @@
 class VisDNA {
     constructor(selector, config = {}) {
         this.selector = selector;
+        this.feature = config.feature || "acousticness";
         const parentWidth = d3.select(this.selector).node().getBoundingClientRect().width;
         this.width = config.width || parentWidth - 200;
         this.height = config.height || 380;
@@ -13,17 +14,16 @@ class VisDNA {
 
         // darker low-end colors for better contrast
         this.colorScales = {
-            energy:       d3.scaleSequential(d3.interpolateRgb("#eaac6d", "#af3000")),
-            tempo:        d3.scaleSequential(d3.interpolateRgb("#d9a7a7", "#940000")),
+            energy:       d3.scaleSequential(d3.interpolateRgb("#bcffc4", "#1d4e00")),
+            tempo:        d3.scaleSequential(d3.interpolateRgb("#ffc8c8", "#770000")),
             acousticness: d3.scaleSequential(d3.interpolateRgb("#d5e9ff", "#012b42")),
-            valence:      d3.scaleSequential(d3.interpolateRgb("#083957", "#ded700")),
+            valence:      d3.scaleSequential(d3.interpolateRgb("#005283", "#ded700")),
             danceability: d3.scaleSequential(d3.interpolateRgb("#ffc7de", "#230465")),
             speechiness:  d3.scaleSequential(d3.interpolateRgb("#ffe9b6", "#6a4c00")),
-            loudness:     d3.scaleSequential(d3.interpolateRgb("#a0a0a1", "#000000"))
+            loudness:     d3.scaleSequential(d3.interpolateRgb("#bafff5", "#007c66"))
         };
 
 
-        this.feature = "acousticness"; // default feature
         this.yearData = [];
         this.numX = 0;
 
@@ -157,7 +157,7 @@ class VisDNA {
         const container = d3.select(this.selector);
         // insert a label before the SVG so it appears to the left of the dropdown
         const label = container.insert("label", "svg")
-            .attr("for", "feature-select")
+            .attr("for", "visdna-feature-select")
             .style("margin-bottom", "12px")
             .style("margin-right", "8px")
             .style("font-size", "14px")
@@ -165,7 +165,7 @@ class VisDNA {
             .style("vertical-align", "middle")
             .text("Select a Feature:");
         const dropdown = container.insert("select", "svg")
-            .attr("id", "feature-select")
+            .attr("id", "visdna-feature-select")
             .style("display", "inline-block")
             .style("margin-bottom", "12px")
             .style("padding", "8px 14px")
@@ -181,6 +181,21 @@ class VisDNA {
                 this.setColorScales();
                 this.updateLegend();
                 this.updateDescription();
+
+                // Sync upward: update global feature and the top-level selector/description if they exist
+                try {
+                    if (typeof window !== 'undefined') {
+                        window.feature = this.feature;
+                        const topSelect = document.getElementById('feature-select');
+                        if (topSelect) topSelect.value = this.feature;
+                        if (typeof updateFeatureDescription === 'function') {
+                            updateFeatureDescription(this.feature);
+                        }
+                    }
+                } catch (syncErr) {
+                    // ignore sync failures; keep UI responsive
+                    console.warn('Failed to sync feature to top-level selector:', syncErr);
+                }
             });
 
         dropdown.selectAll("option")

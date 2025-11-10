@@ -11,21 +11,13 @@
 
 </head>
 <body>
-<!--<header>-->
-<!--    <h1>The Evolution of Sound</h1>-->
-<!--    <h2>Visualizing 30 Years of Pop Culture Through Data</h2>-->
-<!--</header>-->
 
 <!-- single scroll container -->
 <div class="pageScroller">
 
-    <!-- Intro -->
-    <!-- <header class="snap">
-        <h1>The Evolution of Sound</h1>
-        <h2>Visualizing 40 Years of Pop Culture Through Data</h2>
-    </header> -->
+    <div id="scroll-hint">↓ Scroll to explore ↓</div>
 
-    <!-- 🌐 Bubble Universe Visualization -->
+    <!-- Bubble Universe Visualization -->
     <section class="vis-section snap" id="bubble-section">
         <div id="bubble-viz-container" class="chart-space">
             <svg id="bubble-viz"></svg>
@@ -35,7 +27,7 @@
 
     <!-- 🎵 Vinyl Record Player Visualization -->
     <section>
-        <div id="record-player-container" class="chart-space" style="Display:none;">
+        <div id="record-player-container" class="chart-space" style="display:none;">
             <div id="record-player-shell-out">
                 <div id="record-player-shell-mid">
                     <div id="record-player-shell-in">
@@ -51,33 +43,76 @@
         <audio id="player"></audio>
     </section>
 
+    <!-- Feature selection / Intro section -->
+    <section class="vis-section snap" id="feature-selection-section">
+        <div class="intro-container">
+            <h2 class="intro-title">The Evolution of Sound</h2>
+            <p class="intro-paragraph">
+                <span>
+                    Over the past four decades, popular music has evolved dramatically,  shifting in energy, rhythm, mood, and tone.
+                    This project visualizes that transformation through interactive, data-driven explorations built from Spotify and Billboard chart data.
+                </span>
+                <br>
+                <span>
+                    Scroll through the sections below to explore how each musical feature, from energy to valence, has
+                    shaped the soundscape of each generation. You can also select a feature below to isolate it and see how it
+                    has changed over time.
+                </span>
+                <br>
+                <span>
+                    You can also click any of the songs to listen along using the spotify player at the bottom of the page!
+                </span>
+            </p>
 
+            <hr class="intro-divider">
 
-    <section class="vis-section snap" id="universe-section">
-        <iframe
-                src="universe.html"
-                title="Music Universe - Interactive Visualization"
-                loading="lazy"
-                class="universe-embed"
-                allowfullscreen
-        ></iframe>
+            <h3 class="feature-section-title" style="margin-bottom: 0;">Choose a Musical Feature</h3>
+            <p class="feature-section-subtitle" style="margin-top: 1rem;">
+                Each feature captures a different aspect of a song’s composition and feel.
+                Use the dropdown below to select a feature.
+            </p>
+
+            <!-- Feature selector and detailed description -->
+            <div class="feature-selector">
+                <label for="feature-select">Select Feature: </label>
+                <select id="feature-select" aria-label="Select musical feature">
+                    <option value="acousticness">Acousticness</option>
+                    <option value="danceability">Danceability</option>
+                    <option value="energy">Energy</option>
+                    <option value="loudness">Loudness</option>
+                    <option value="speechiness">Speechiness</option>
+                    <option value="tempo">Tempo</option>
+                    <option value="valence">Valence</option>
+                </select>
+
+                <div id="feature-description" >
+                    <!-- Detailed feature description populated by script -->
+                </div>
+            </div>
+        </div>
     </section>
 
-    <!-- 🧬 DNA Helix Visualization Section -->
+    <!-- DNA Helix Visualization Section -->
     <section class="vis-section snap" id="dna-section">
         <div class="text-block">
             <h3>The DNA of Music</h3>
             <p>
-                Music, like DNA, evolves through subtle changes in rhythm, tone, and structure.
-                This helix represents the ever-changing genetic code of sound across decades.
-                Click on a year to discover more about the chart-topping songs of that year and their unique musical traits.
+                Together, these features form the “genetic code” of a song, much like DNA encodes biological traits.
+                This visualization represents how the average musical features of Billboard-charting songs have evolved each year since 1980.
+                Each vertical bar corresponds to one year, with color intensity encoding the value of the selected feature (for example, higher energy or greater acousticness).
+                Hovering over a bar shows the specific feature value for that year, and clicking on it transitions to a detailed yearly view that displays the top 10 longest-charting #1 songs, their artists, and their feature measurements.
             </p>
         </div>
         <div id="vis-dna" class="chart-space"></div>
         <div id="vis-dna-yearly" class="chart-space" style="display:none"></div>
     </section>
 
-    <!-- 🌍 Geographical Music Explorer -->
+    <!-- Universe -->
+    <section class="vis-section snap" id="universe-section">
+        <iframe src="universe.html" title="Music Universe - Interactive Visualization" loading="lazy" class="universe-embed" allowfullscreen></iframe>
+    </section>
+
+    <!-- Geographical Explorer -->
     <section class="vis-section snap" id="geo-section">
         <iframe
             src="viz-globalization/index.html"
@@ -88,17 +123,16 @@
         ></iframe>
     </section>
 
-    <!-- 🎼 Genre Treemap Visualization -->
+    <!-- Genre Treemap -->
     <section class="vis-section snap" id="genre-section">
         <div class="chart-container">
             <h2 class="chart-title">How Genres Defined Each Year’s Music Scene</h2>
-            <p class="chart-description">
-                A treemap showing how dominant music genres shaped the charts each year.
-            </p>
+            <p class="chart-description">A treemap showing how dominant music genres shaped the charts each year.</p>
             <div id="treemap" class="chart-space"></div>
         </div>
     </section>
 
+    <!-- Conclusion -->
     <section class="vis-section snap" id="conclusion-section">
         <div class="text-block">
             <h3>Conclusion</h3>
@@ -109,7 +143,6 @@
                 As we continue to explore and innovate, music remains a powerful force that connects us all.
             </p>
         </div>
-
     </section>
 
 </div> <!-- /.pageScroller -->
@@ -123,7 +156,7 @@
                 class="spotify-embed"
                 src="https://open.spotify.com/embed/track/0VjIjW4GlUZAMYd2vXMi3b?utm_source=generator"
                 width="20%" height="152"
-                frameBorder="0"
+                style="border:0;"
                 allowfullscreen=""
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                 loading="lazy"
@@ -141,12 +174,73 @@
 <script src="js/vis_dna_yearly.js"></script>
 <script src="js/vis_dna.js"></script>
 <script src="js/scroll_snap.js"></script>
-
-
 <script src="js/treemap.js"></script>
 <script>
-    const dnaVis = new VisDNA("#vis-dna", { height: 360 });
-    dnaVis.start?.();
+    // Provide detailed explanations for each audio feature and expose a global `feature` variable
+    var featureDescriptions = {
+        danceability: "Danceability describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. Higher danceability generally means a steady tempo and a clear, consistent beat that encourages movement. This metric is computed from rhythmic features such as beat clarity, onset regularity, and the perceptual prominence of the main downbeat. Use this feature to identify songs with steady grooves, pop and electronic tracks that prioritize a consistent rhythmic pulse, or to contrast groove-heavy music with more free-form or experimental compositions.",
+        energy: "Energy is a perceptual measure of intensity and activity ranging typically from 0.0 to 1.0. Tracks with high energy tend to be loud, fast, and dynamic — think rock anthems, electronic dance music, and intense pop productions. Low-energy tracks are calmer, quieter, and often more ambient or acoustic. The energy score is derived from production features including dynamic range, spectral content, perceived loudness, and timbral complexity. Use energy to compare overall intensity between songs and to analyze shifts in production aesthetics over time (for example, increased loudness and compression in certain decades).",
+        loudness: "Loudness measures the overall sound level of a track in decibels (dB) and is expressed as a single averaged value for the entire recording. Unlike peak amplitude, loudness accounts for the perceived volume across the frequency spectrum and the effects of mixing and mastering (such as compression and limiting). Louder tracks are not necessarily more energetic in a musical sense, but higher loudness often corresponds to more aggressive mastering and denser mixes. When interpreting loudness, remember that track-to-track differences can reflect production trends (e.g., the loudness war) rather than changes in the underlying musical composition.",
+        speechiness: "Speechiness estimates the presence of spoken words in a recording. Values close to 1.0 indicate a high probability that the track contains primarily speech, such as podcasts, audiobooks, or talk-rap segments. Lower values indicate more musical content with sung or instrumental material. This metric is useful to detect tracks that blend spoken-word elements, rap verses with heavy speech-like delivery, or experimental tracks that blur the line between speech and melodic vocalization. Typical music with conventional singing scores well below 0.66.",
+        acousticness: "Acousticness is a confidence measure of whether the recording is acoustic, meaning it relies primarily on non-electronic instruments and natural sound sources. High acousticness suggests minimal electronic processing, lower use of synthetic instruments, and production styles like unplugged performances, folk, or singer-songwriter recordings. Low acousticness often corresponds to electronic music, heavily produced pop, and tracks featuring synthesized instruments. This feature can help separate organic, instrument-driven tracks from more produced, electronic ones.",
+        valence: "Valence quantifies the musical positiveness conveyed by a track on a scale from 0.0 to 1.0. High-valence tracks sound more positive — happy, euphoric, and bright — often using major tonalities, upbeat tempos, and consonant harmonic progressions. Low-valence tracks convey emotions such as sadness, tension, anger, or melancholy and may feature minor keys, dissonance, slower tempos, and darker timbral choices. Valence is a useful proxy for the emotional tone of music and complements other features (like tempo and mode) to explain why certain songs feel uplifting versus somber.",
+        tempo: "Tempo is the estimated speed of a track measured in beats per minute (BPM). It reflects how quickly the pulse of the music progresses and is a fundamental descriptor in rhythmic analysis. Higher BPM values indicate faster songs that often feel energetic or danceable, while lower BPMs are associated with ballads, slow grooves, and ambient pieces. Tempo detection may sometimes choose a perceived beat that is half or double the true metrical pulse (for example, counting a fast groove in half-time), so interpret tempo alongside other rhythmic features for a full picture. Use tempo to study historical shifts in song pacing and how they relate to genres and production styles."
+    };
+
+    // Expose a global feature variable and sync it with the dropdown selection.
+    // Default to 'energy' (this can be changed if you prefer a different initial feature).
+    var feature = 'acousticness';
+
+    function updateFeatureDescription(selected) {
+        var descEl = document.getElementById('feature-description');
+        if (!descEl) return;
+        var title = selected.charAt(0).toUpperCase() + selected.slice(1);
+        var body = featureDescriptions[selected] || 'No description available.';
+        descEl.innerHTML = "<p><strong>" + title + "</strong><br>" + body + "</p>";
+    }
+
+    // When the DOM is ready, wire up the selector and set the initial description.
+    document.addEventListener('DOMContentLoaded', function() {
+        var select = document.getElementById('feature-select');
+        if (select) {
+            // Set default selection to match the default feature variable
+            select.value = feature;
+            select.addEventListener('change', function(e) {
+                feature = e.target.value; // update global var used by VisDNA
+                updateFeatureDescription(feature);
+
+                // If the DNA visualization is already instantiated, notify it of the change
+                // Use window.dnaVis which we expose when creating the instance below.
+                if (window.dnaVis) {
+                    try {
+                        window.dnaVis.feature = feature;
+                        // keep visDNA's own dropdown in sync if it exists
+                        var visSelect = document.getElementById('visdna-feature-select');
+                        if (visSelect) visSelect.value = feature;
+
+                        // update internal color scale domains and legend/description
+                        window.dnaVis.setColorScales && window.dnaVis.setColorScales();
+                        window.dnaVis.updateLegend && window.dnaVis.updateLegend();
+                        window.dnaVis.updateDescription && window.dnaVis.updateDescription();
+                    } catch (err) {
+                        // fail silently — shouldn't block UI
+                        console.warn('Failed to update dnaVis feature:', err);
+                    }
+                }
+            });
+        }
+        // populate initial description
+        updateFeatureDescription(feature);
+    });
+
+    // Initialize the DNA visualization using the (now-defined) feature variable.
+    // The VisDNA instance is created after this script block below in the original file — keep that timing.
+</script>
+<script>
+    // expose the instance on window so other scripts (like the top-level feature selector) can call methods on it
+    window.dnaVis = new VisDNA("#vis-dna", { height: 360, feature: feature});
+    // start is optional; VisDNA will begin animating after data loads. Keep optional start call for compatibility.
+    window.dnaVis.start?.();
 </script>
 </body>
 </html>

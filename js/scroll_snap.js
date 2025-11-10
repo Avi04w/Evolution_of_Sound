@@ -46,4 +46,55 @@
         const next = all[Math.min(all.length - 1, Math.max(0, idx + delta))];
         next?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+// js/scrollSnap.js (replace the existing DOMContentLoaded handler)
+    document.addEventListener('DOMContentLoaded', function () {
+        const hint = document.getElementById('scroll-hint');
+        const targets = ['bubble-section', 'feature-selection-section']
+            .map(id => document.getElementById(id))
+            .filter(Boolean);
+        const scroller = document.querySelector('.pageScroller');
+
+        if (!hint || targets.length === 0) return;
+
+        const observerOptions = {
+            root: scroller || null,
+            threshold: 0.5
+        };
+
+        const visible = new Set();
+
+        if ('IntersectionObserver' in window) {
+            const obs = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const id = entry.target.id;
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                        visible.add(id);
+                    } else {
+                        visible.delete(id);
+                    }
+                });
+                if (visible.size > 0) hint.classList.remove('hide'); else hint.classList.add('hide');
+            }, observerOptions);
+
+            targets.forEach(t => obs.observe(t));
+        } else {
+            // Fallback: simple check for any target being >=50% visible
+            const checkAny = () => {
+                const rootRect = (scroller && scroller.getBoundingClientRect()) || { top: 0, bottom: window.innerHeight };
+                let anyVisible = false;
+                for (const target of targets) {
+                    const rect = target.getBoundingClientRect();
+                    const visibleHeight = Math.min(rect.bottom, rootRect.bottom) - Math.max(rect.top, rootRect.top);
+                    const ratio = visibleHeight / rect.height;
+                    if (ratio >= 0.5) { anyVisible = true; break; }
+                }
+                if (anyVisible) hint.classList.remove('hide'); else hint.classList.add('hide');
+            };
+
+            (scroller || window).addEventListener('scroll', checkAny, { passive: true });
+            checkAny();
+        }
+    });
+
 })();
