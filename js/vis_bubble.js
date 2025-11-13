@@ -63,7 +63,7 @@ class BubblePlayerViz {
     const padding = 5;
     const widthMinusPadding = this.width - padding;
     const heightMinusPadding = this.height - padding;
-    
+
     // Cache node radii to avoid repeated lookups
     this.nodes.forEach(node => {
       if (!node.isCenter) {
@@ -83,20 +83,20 @@ class BubblePlayerViz {
         const halfWidth = this.centerExclusionWidth / 2 + this.centerExclusionPadding;
         const halfHeight = this.centerExclusionHeight / 2 + this.centerExclusionPadding;
         const strength = alpha * 3;
-        
+
         for (let i = 0; i < this.nodes.length; i++) {
           const node = this.nodes[i];
           if (node.isCenter) continue;
-          
+
           const dx = node.x - centerX;
           const dy = node.y - centerY;
           const absDx = dx < 0 ? -dx : dx; // Faster than Math.abs
           const absDy = dy < 0 ? -dy : dy;
-          
+
           // Check if inside or near the rectangular exclusion zone
           const overlapX = halfWidth - absDx;
           const overlapY = halfHeight - absDy;
-          
+
           if (overlapX > 0 && overlapY > 0) {
             // Push away from rectangle - choose direction with least overlap
             if (overlapX < overlapY) {
@@ -110,33 +110,33 @@ class BubblePlayerViz {
       .force("bounds", () => {
         const halfWidth = this.centerExclusionWidth / 2;
         const halfHeight = this.centerExclusionHeight / 2;
-        
+
         for (let i = 0; i < this.nodes.length; i++) {
           const node = this.nodes[i];
           if (node.isCenter) continue;
-          
+
           const radius = node._radius;
           const radiusPlusPadding = radius + padding;
-          
+
           // Screen bounds - optimized min/max
           if (node.x < radiusPlusPadding) node.x = radiusPlusPadding;
           else if (node.x > widthMinusPadding - radius) node.x = widthMinusPadding - radius;
-          
+
           if (node.y < radiusPlusPadding) node.y = radiusPlusPadding;
           else if (node.y > heightMinusPadding - radius) node.y = heightMinusPadding - radius;
-          
+
           // Hard rectangular boundary for center text
           const dx = node.x - centerX;
           const dy = node.y - centerY;
           const absDx = dx < 0 ? -dx : dx;
           const absDy = dy < 0 ? -dy : dy;
-          
+
           // Check if bubble overlaps with center rectangle
           if (absDx < halfWidth + radius && absDy < halfHeight + radius) {
             // Calculate how much to push in each direction
             const pushX = halfWidth + radius - absDx;
             const pushY = halfHeight + radius - absDy;
-            
+
             // Push in direction with least resistance
             if (pushX < pushY) {
               node.x = centerX + (dx > 0 ? 1 : -1) * (halfWidth + radius);
@@ -199,7 +199,7 @@ class BubblePlayerViz {
     const padding = 40;
     const titleBBox = titleText.node().getBBox();
     const subtitleBBox = subtitleText.node().getBBox();
-    
+
     // Store dimensions for use in simulation
     this.centerExclusionWidth = Math.max(titleBBox.width, subtitleBBox.width) + padding * 2;
     this.centerExclusionHeight = titleBBox.height + subtitleBBox.height + padding * 2;
@@ -278,7 +278,7 @@ class BubblePlayerViz {
     const padding = 5;
     const widthMinusPadding = this.width - padding;
     const heightMinusPadding = this.height - padding;
-    
+
     // Cache node radii
     this.nodes.forEach(node => {
       if (!node.isCenter) {
@@ -297,19 +297,19 @@ class BubblePlayerViz {
         const halfWidth = this.centerExclusionWidth / 2 + this.centerExclusionPadding;
         const halfHeight = this.centerExclusionHeight / 2 + this.centerExclusionPadding;
         const strength = alpha * 3;
-        
+
         for (let i = 0; i < this.nodes.length; i++) {
           const node = this.nodes[i];
           if (node.isCenter) continue;
-          
+
           const dx = node.x - centerX;
           const dy = node.y - centerY;
           const absDx = dx < 0 ? -dx : dx;
           const absDy = dy < 0 ? -dy : dy;
-          
+
           const overlapX = halfWidth - absDx;
           const overlapY = halfHeight - absDy;
-          
+
           if (overlapX > 0 && overlapY > 0) {
             if (overlapX < overlapY) {
               node.vx += (dx > 0 ? 1 : -1) * overlapX * strength;
@@ -322,31 +322,31 @@ class BubblePlayerViz {
       .force("bounds", () => {
         const halfWidth = this.centerExclusionWidth / 2;
         const halfHeight = this.centerExclusionHeight / 2;
-        
+
         for (let i = 0; i < this.nodes.length; i++) {
           const node = this.nodes[i];
           if (node.isCenter) continue;
-          
+
           const radius = node._radius;
           const radiusPlusPadding = radius + padding;
-          
+
           // Screen bounds - optimized
           if (node.x < radiusPlusPadding) node.x = radiusPlusPadding;
           else if (node.x > widthMinusPadding - radius) node.x = widthMinusPadding - radius;
-          
+
           if (node.y < radiusPlusPadding) node.y = radiusPlusPadding;
           else if (node.y > heightMinusPadding - radius) node.y = heightMinusPadding - radius;
-          
+
           // Hard rectangular boundary for center text
           const dx = node.x - centerX;
           const dy = node.y - centerY;
           const absDx = dx < 0 ? -dx : dx;
           const absDy = dy < 0 ? -dy : dy;
-          
+
           if (absDx < halfWidth + radius && absDy < halfHeight + radius) {
             const pushX = halfWidth + radius - absDx;
             const pushY = halfHeight + radius - absDy;
-            
+
             if (pushX < pushY) {
               node.x = centerX + (dx > 0 ? 1 : -1) * (halfWidth + radius);
             } else {
@@ -404,8 +404,6 @@ class BubblePlayerViz {
   }
 
   async handleBubbleClick(event, d) {
-    const songUrl = `${this.songsPath}${d.Year}.mp3`;
-
     if (this.activeBubble) {
       this.activeBubble.attr("stroke", null).attr("stroke-width", null).attr("opacity", 0.7);
     }
@@ -417,15 +415,10 @@ class BubblePlayerViz {
 
     if (d.Year === this.currentSongId && !this.recordPlayer.isPaused()) {
       this.updateLabels(d.Year, false);
-      this.recordPlayer.pause();
       return;
     }
 
-    if (d.Year !== this.currentSongId) {
-      await this.recordPlayer.load(songUrl, d["Image URL"]);
-    }
-
-    this.recordPlayer.play();
+    showSpotifyPlayer(d.id);
     this.currentSongId = d.Year;
     this.updateLabels(d.Year, true);
   }
