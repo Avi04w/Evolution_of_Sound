@@ -182,20 +182,7 @@ class VisDNA {
                 this.updateLegend();
                 this.updateDescription();
 
-                // Sync upward: update global feature and the top-level selector/description if they exist
-                try {
-                    if (typeof window !== 'undefined') {
-                        window.feature = this.feature;
-                        const topSelect = document.getElementById('feature-select');
-                        if (topSelect) topSelect.value = this.feature;
-                        if (typeof updateFeatureDescription === 'function') {
-                            updateFeatureDescription(this.feature);
-                        }
-                    }
-                } catch (syncErr) {
-                    // ignore sync failures; keep UI responsive
-                    console.warn('Failed to sync feature to top-level selector:', syncErr);
-                }
+                setGlobalFeature(event.target.value);
             });
 
         dropdown.selectAll("option")

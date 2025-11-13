@@ -314,9 +314,23 @@ html, body { height: 100%; margin: 0; }
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-
 #feature-description p {
     margin-top: 6px;
     color: #374151;
     line-height: 1.55;
+}
+
+.feature-selector {
+    display: inline-block;
+    background: #fff;
+    padding: 0.5rem;
+}
+
+.feature-title-dropdown {
+    font-size: 1.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 2px 4px;
+    font-weight: 600;
 }
