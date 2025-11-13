@@ -2,10 +2,36 @@
   background: white;
   color: black;
   position: absolute;
-  padding: 6px 10px;
+  padding: 10px;
   border-radius: 10px;
   pointer-events: none;
   opacity: 0;
-  font-size: 14px;
+  font-size: 12px;
   box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: start;
+  gap: 4px;
+}
+
+.event-tooltip img {
+  width: 200px;
+  height: 100px;
+  object-fit: cover;
+  object-position: center;
+}
+
+#event-title {
+  font-size: 16px;
+}
+
+#event-content-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+#event-content-container p {
+  padding: 0.2rem;
 }

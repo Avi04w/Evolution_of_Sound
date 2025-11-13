@@ -1,22 +1,11 @@
 class FeatureTimeline {
-    constructor(parent, feature) {
+    constructor(parent, feature, events) {
         this.parent = parent;
         this.feature = feature;
         this.margin = { top: 40, right: 40, bottom: 50, left: 60 };
         this.width = window.innerWidth * 0.8;
         this.height = window.innerHeight * 0.6;
-        this.events = {
-            acousticness: [
-                { year: 1999, event: "Genre came out" },
-                { year: 2008, event: "XYZ happened" }
-            ],
-            danceablility: [],
-            energy: [],
-            loudness: [],
-            speechieness: [],
-            tempo: [],
-            valance: []
-        };
+        this.events = events;
 
         this.initVis();
     }
@@ -272,7 +261,7 @@ class FeatureTimeline {
 
                 this.eventTooltip
                     .style("opacity", 1)
-                    .html(`<strong>${d.event}</strong> (${d.year})`)
+                    .html(this.eventTooltipHTML(d));
 
                 this.updateEventTooltipPos(event);
             })
@@ -290,7 +279,7 @@ class FeatureTimeline {
             });
 
         markersEnter.transition()
-            .delay((_, i) => 1500 + i * 400) // staggers
+            .delay((_, i) => 1300 + i * 400) // staggers
             .duration(800)
             .ease(d3.easeElasticOut)
             .attr("r", 8)
@@ -318,20 +307,54 @@ class FeatureTimeline {
 
     updateEventTooltipPos(event) {
         const tooltipWidth = this.eventTooltip.node().offsetWidth;
+        const tooltipHeight = this.eventTooltip.node().offsetHeight;
         const x = event.pageX - tooltipWidth / 2;
-        const y = event.pageY - 50;
+        const y = event.pageY - tooltipHeight - 20;
 
         this.eventTooltip
             .style("left", `${x}px`)
             .style("top", `${y}px`);
     }
+
+    eventTooltipHTML(d) {
+        return `
+            <img src=${d.image}>
+            <div id="event-title"><strong>${d.event}</strong> (${d.year})</div>
+            <div id="event-content-container">
+                ${d.contents.map((text) => {
+                    return `<div>${text}</div>`;
+                }).join(" ")}
+            </div>
+        `;
+    }
 }
+
+FEATURE_EVENTS = {
+    acousticness: [
+        {
+            year: 1973,
+            event: "Genre came out",
+            contents: [
+                "BLAHLD",
+                "ASFLHJ",
+                "ASFHJ"
+            ],
+            image: "https://picsum.photos/200/300"
+        },
+    ],
+    danceablility: [],
+    energy: [],
+    loudness: [],
+    speechieness: [],
+    tempo: [],
+    valance: []
+};
 
 // --------------------------
 // Instantiate after load
 // --------------------------
 document.addEventListener("DOMContentLoaded", function () {
-    window.featureTimeline = new FeatureTimeline("#feature-timeline-vis", feature);
+    window.featureTimeline = new FeatureTimeline("#feature-timeline-vis", feature, FEATURE_EVENTS);
 
     const selector = document.getElementById("feature-select");
 
