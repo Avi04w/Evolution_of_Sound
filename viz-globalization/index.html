@@ -3,139 +3,170 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Billboard Origins — Globalization Prototype</title>
+    <title>Evolution of Sound — Feature Explorer</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="app-header" hidden>
-      <h1>Billboard Origins — Globalization Prototype</h1>
+    <header class="app-header">
+      <h1>Evolution of Sound — Feature Explorer</h1>
+      <p>
+        Compare how musical features travel around the Hot 100 by selecting an audio feature and watching
+        how it shifts across artist origins from 1980 through 2020.
+      </p>
     </header>
     <main>
       <section class="panel panel--map">
         <div class="map-header">
-          <h2>Global Origins Map</h2>
+          <div class="map-title">
+            <h2>World Feature Choropleth</h2>
+            <p class="map-subtitle" data-role="map-summary">
+              Focus on one feature at a time and use the map to see how exported sounds differ by country.
+            </p>
+          </div>
           <div class="map-controls" data-role="map-controls">
             <label class="control-label">
-              Pin colors
-              <select id="pin-color-mode" data-role="pin-color-mode">
-                <option value="origin-region">Origin region</option>
-                <option value="genre-supergroup">Genre supergroup</option>
-                <option value="none">None</option>
+              Feature
+              <select id="feature-select" data-role="feature-select">
+                <option value="acousticness" selected>Acousticness</option>
+                <option value="danceability">Danceability</option>
+                <option value="energy">Energy</option>
+                <option value="loudness">Loudness</option>
+                <option value="valence">Valence</option>
+                <option value="instrumentalness">Instrumentalness</option>
+                <option value="speechiness">Speechiness</option>
+                <option value="liveness">Liveness</option>
+                <option value="tempo">Tempo</option>
               </select>
             </label>
-            <label class="control-label">
-              Choropleth
-              <select id="choropleth-mode" data-role="choropleth-mode">
-                <option value="weekly-share">Weekly share</option>
-                <option value="cumulative-share">Cumulative share</option>
-                <option value="first-activation">First activation</option>
+            <label class="control-label" style="display: none" aria-hidden="true">
+              Map metric
+              <select id="map-mode" data-role="map-mode" disabled>
+                <option value="absolute" selected>Average level</option>
+                <option value="change">Change since 1980s</option>
+                <option value="divergence">Difference from US</option>
               </select>
             </label>
-            <label class="control-checkbox">
-              <input type="checkbox" id="exclude-us" data-role="exclude-us" />
-              Exclude US
+            <label class="control-label control-label--small" style="display: none" aria-hidden="true">
+              Aggregation window
+              <select id="aggregation-window" data-role="aggregation-window" disabled>
+                <option value="1">Weekly</option>
+                <option value="4">4-week smooth</option>
+                <option value="13">Quarter-year</option>
+                <option value="52" selected>Annual</option>
+              </select>
             </label>
-            <label class="control-label control-label--small">
-              Top pins
+            <label class="control-label control-label--small" aria-hidden="true" style="display: none">
+              Highlight top exporters
               <input
                 type="number"
-                id="top-pin-count"
-                data-role="top-pin-count"
-                min="1"
-                max="50"
-                step="1"
-                value="10"
-              />
-            </label>
-            <label class="control-label control-label--small">
-              Ghost window (weeks)
-              <input
-                type="number"
-                id="window-weeks"
-                data-role="window-weeks"
-                min="0"
-                max="26"
+                id="top-exporter-count"
+                data-role="top-exporter-count"
+                min="3"
+                max="20"
                 step="1"
                 value="8"
+                disabled
               />
             </label>
+            <label class="control-checkbox" aria-hidden="true" style="display: none">
+              <input
+                type="checkbox"
+                id="normalize-track-count"
+                data-role="normalize-track-count"
+                disabled
+              />
+              Normalize for track count (disabled)
+            </label>
           </div>
-          <div class="map-legends">
-            <div class="map-legend" data-role="map-legend"></div>
-          </div>
+        </div>
+        <div class="map-legends">
+          <div class="map-legend" data-role="map-legend"></div>
+          <div class="map-legend" data-role="divergence-legend"></div>
         </div>
         <div class="map-container">
           <svg id="map" width="960" height="540" aria-labelledby="map-title" role="img">
-            <title id="map-title">Rank-weighted origin shares by country</title>
+            <title id="map-title">Feature levels of Billboard-charting artists by origin</title>
           </svg>
           <div class="map-tooltip" data-role="map-tooltip" hidden></div>
         </div>
-        <div class="pin-legend pin-legend--inline" data-role="pin-legend"></div>
+        <div class="pin-legend pin-legend--inline" data-role="pin-legend">
+          <span class="legend-heading">Feature hotspots</span>
+          <div class="pin-legend-item" data-role="hotspot-description">
+            Hover a country to see its time series or use the list for context.
+          </div>
+        </div>
+        <p class="map-footnote">
+          Countries shown in gray did not place artists on the chart during the selected window; values are
+          based on audio features of the tracks that entered the US Billboard Hot 100.
+        </p>
       </section>
       <section class="panel panel--stats">
-        <h2>Weekly Stats</h2>
-        <div class="stats-card" data-role="stats-card">
+        <h2>Feature Insights</h2>
+        <p class="panel-description">
+          These stats summarize the currently selected feature and time window for the full Hot 100 cohort.
+        </p>
+        <div class="stats-card" data-role="feature-stats">
           <div class="stat-row">
-            <span class="stat-label">Non-US Share</span>
-            <span class="stat-value" data-stat="nonUSShare">—</span>
+            <span class="stat-label">Global average</span>
+            <span class="stat-value" data-stat="globalAverage">—</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Unique Origins</span>
-            <span class="stat-value" data-stat="uniqueOrigins">—</span>
+            <span class="stat-label">US average</span>
+            <span class="stat-value" data-stat="usAverage">—</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Shannon Entropy H</span>
-            <span class="stat-value" data-stat="entropy">—</span>
+            <span class="stat-label">Countries active</span>
+            <span class="stat-value" data-stat="activeCountries">—</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Collaboration Rate</span>
-            <span class="stat-value" data-stat="collabRate">—</span>
+            <span class="stat-label">Top exporter (feature)</span>
+            <span class="stat-value" data-stat="topExporter">—</span>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Cumulative Origins So Far</span>
-            <span class="stat-value" data-stat="cumulativeOrigins">—</span>
+          <div class="stat-row" style="display: none" aria-hidden="true">
+            <span class="stat-label">Fastest mover</span>
+            <span class="stat-value" data-stat="fastestMover">—</span>
           </div>
         </div>
         <div class="sparkline-section">
-          <h3 class="sparkline-heading">Trend Overview</h3>
+          <h3 class="sparkline-heading">Quick Feature Storylines</h3>
           <div class="sparkline-group" data-role="sparklines">
-            <div class="sparkline-card" data-sparkline="nonUSShare">
+            <div class="sparkline-card" data-sparkline="globalFeature">
               <div class="sparkline-card__header">
-                <span class="sparkline-title">Non-US Share</span>
-                <span class="sparkline-value" data-sparkline-value="nonUSShare">—</span>
+                <span class="sparkline-title">Global feature level</span>
+                <span class="sparkline-value" data-sparkline-value="globalFeature">—</span>
               </div>
               <svg
                 class="sparkline-chart"
                 width="320"
                 height="52"
                 role="img"
-                aria-label="Non-US Share over time"
+                aria-label="Global feature over time"
               ></svg>
             </div>
-            <div class="sparkline-card" data-sparkline="uniqueOrigins">
+            <div class="sparkline-card" data-sparkline="usFeature">
               <div class="sparkline-card__header">
-                <span class="sparkline-title">Unique Origins</span>
-                <span class="sparkline-value" data-sparkline-value="uniqueOrigins">—</span>
+                <span class="sparkline-title">US feature level</span>
+                <span class="sparkline-value" data-sparkline-value="usFeature">—</span>
               </div>
               <svg
                 class="sparkline-chart"
                 width="320"
                 height="52"
                 role="img"
-                aria-label="Unique Origins over time"
+                aria-label="US feature over time"
               ></svg>
             </div>
-            <div class="sparkline-card" data-sparkline="entropy">
+            <div class="sparkline-card" data-sparkline="spreadFeature">
               <div class="sparkline-card__header">
-                <span class="sparkline-title">Shannon Entropy H</span>
-                <span class="sparkline-value" data-sparkline-value="entropy">—</span>
+                <span class="sparkline-title">Feature spread</span>
+                <span class="sparkline-value" data-sparkline-value="spreadFeature">—</span>
               </div>
               <svg
                 class="sparkline-chart"
                 width="320"
                 height="52"
                 role="img"
-                aria-label="Shannon Entropy over time"
+                aria-label="Global spread over time"
               ></svg>
             </div>
           </div>
@@ -155,14 +186,13 @@
             value="0"
             aria-label="Week"
           />
-          <span class="timeline-index" data-role="week-index">0 / 0</span>
-          <label class="control-label control-label--small control-label--timeline">
-            Speed
+          <label class="control-label control-label--timeline">
+            Playback speed
             <select id="playback-speed" data-role="playback-speed">
-              <option value="100">Fast</option>
+              <option value="100">Ultra-fast</option>
               <option value="200" selected>Normal</option>
               <option value="400">Slow</option>
-              <option value="800">Very Slow</option>
+              <option value="800">Very slow</option>
             </select>
           </label>
         </div>

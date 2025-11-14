@@ -226,6 +226,7 @@
     // Expose a global feature variable and sync it with the dropdown selection.
     // Default to 'energy' (this can be changed if you prefer a different initial feature).
     var feature = 'acousticness';
+    const GEO_EMBED_SELECTOR = ".geographical-embed";
 
     function updateFeatureDescription(selected) {
         var descEl = document.getElementById('feature-description');
@@ -243,6 +244,17 @@
             select.value = feature;
             select.addEventListener("change", (e) => {
                 setGlobalFeature(e.target.value);
+            });
+        }
+        const geoFrame = document.querySelector(GEO_EMBED_SELECTOR);
+        if (geoFrame) {
+            geoFrame.addEventListener("load", () => {
+                if (window.feature) {
+                    geoFrame.contentWindow?.postMessage(
+                        { type: "global-feature-change", feature: window.feature },
+                        "*"
+                    );
+                }
             });
         }
         // populate initial description
@@ -314,6 +326,17 @@
                 feature: f
             }, '*');
         }
+        syncGeographicalViz();
+    }
+
+    function syncGeographicalViz() {
+        if (!window.feature) return;
+        const iframe = document.querySelector(GEO_EMBED_SELECTOR);
+        if (!iframe || !iframe.contentWindow) return;
+        iframe.contentWindow.postMessage(
+            { type: "global-feature-change", feature: window.feature },
+            "*"
+        );
     }
 
     // Listen for requests from the iframe
