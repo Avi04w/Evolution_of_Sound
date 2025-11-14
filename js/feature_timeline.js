@@ -603,7 +603,44 @@ FEATURE_EVENTS = {
             image: "https://storage.googleapis.com/pr-newsroom-wp/1/2024/05/CLASSICS-Hip-Hop-FTR-Header-1-1440x1440.jpg"
         }
     ],
-    tempo: [],
+    tempo: [
+        {
+            year: 1983,
+            event: "Dance-Pop and New Wave Increase Tempo",
+            contents: [
+                "Early 1980s pop was driven by upbeat dance rhythms and electronic production.",
+                "New Wave bands and synth-driven hits kept tempos high, reflected in the elevated BPM levels of this era."
+            ],
+            image: "https://d3nxoulyw7bc8u.cloudfront.net/images/events/109c6155-d816-4ac6-af19-8545b66fe01e.jpg"
+        },
+        {
+            year: 2007,
+            event: "Electronic Dance Music Peaks in Popularity",
+            contents: [
+                "The mid-2000s saw EDM and electro-pop rise globally, with faster, high-energy beats becoming mainstream.",
+                "This period marks the highest tempo spike across the dataset as club-driven production dominated the charts."
+            ],
+            image: "https://www.electronic-festivals.com/sites/default/files/tomorrowland_4.jpg"
+        },
+        {
+            year: 2017,
+            event: "Streaming Era Pushes Pop Toward Slower Tempos",
+            contents: [
+                "The late 2010s saw a major shift toward mid-tempo and slower music influenced by trap, R&B, and atmospheric pop.",
+                "This brings a noticeable tempo dip despite high-energy genres still existing in the charts."
+            ],
+            image: "https://imageio.forbes.com/blogs-images/ogdenpayne/files/2017/02/Daniel-Caesar-NEw-by-Keith-Henry.jpg?format=jpg&height=600&width=1200&fit=bounds"
+        },
+        {
+            year: 2020,
+            event: "A Subtle Rebound in Tempo",
+            contents: [
+                "The early 2020s introduce a slight tempo recovery due to hybrid genres like dance-pop revival, K-pop, and upbeat indie.",
+                "While not returning to 2000s levels, tempos rise modestly after the mid-2010s slowdown."
+            ],
+            image: "https://media.voguearabia.com/photos/67dd0d999fb0e0ee5f979157/4:3/w_2560%2Cc_limit/02-175_fn.jpg"
+        }
+    ],
     valance: []
 };
 
