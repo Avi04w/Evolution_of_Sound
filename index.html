@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/bubble.css">
     <link rel="stylesheet" href="css/record_player.css">
     <link rel="stylesheet" href="css/treemap.css">
+    <link rel="stylesheet" href="css/eras.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 
 </head>
@@ -41,6 +42,20 @@
             <div id="record-player-arm"></div>
         </div>
         <audio id="player"></audio>
+    </section>
+
+    <section class="era-section snap">
+        <div class="era-heading">
+            <h2 class="era-title-main">Most Popular Genres Every Five Years</h2>
+            <p class="era-title-sub">billboard top-chart data grouped into 5-year eras</p>
+        </div>
+        <div class="era-layout">
+            <div class="era-nav-wrap">
+                <svg id="era-nav" width="200" height="520"></svg>
+            </div>
+
+            <div id="era-panels" class="era-panels"></div>
+        </div>
     </section>
 
     <!-- Feature selection / Intro section -->
@@ -175,6 +190,8 @@
 <script src="js/vis_dna.js"></script>
 <script src="js/scroll_snap.js"></script>
 <script src="js/treemap.js"></script>
+<script src="js/eras.js"></script>
+
 <script>
     // Provide detailed explanations for each audio feature and expose a global `feature` variable
     var featureDescriptions = {
