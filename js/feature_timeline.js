@@ -78,6 +78,7 @@ class FeatureTimeline {
 
     updateVis() {
         const vis = this;
+        console.log(vis.timeline)
 
         vis.xScale
             .domain(d3.extent(vis.timeline, d => d.year))
@@ -322,7 +323,7 @@ class FeatureTimeline {
             <div id="event-title"><strong>${d.event}</strong> (${d.year})</div>
             <div id="event-content-container">
                 ${d.contents.map((text) => {
-                    return `<div>${text}</div>`;
+                    return `<div>• ${text}</div>`;
                 }).join(" ")}
             </div>
         `;
@@ -333,21 +334,63 @@ FEATURE_EVENTS = {
     acousticness: [
         {
             year: 1984,
-            event: "XXX Event",
+            event: "Synth-pop and drum machines take over pop music",
             contents: [
-                "blahblahblah",
-                "flasd kjsadfkl ashldk",
+                "Affordable drum machines and synthesizers exploded in popularity.",
+                "Electronic pop groups dominated the charts.",
+                "This drove a major decline in acoustic instrumentation in Billboard hits."
             ],
-            image: "https://picsum.photos/1000/500"
+            image: "https://media.sweetwater.com/m/insync/2022/11/Must-see-Drum-Machines-and-Sequencers-2022-Featured-Image.jpg"
+        },
+        {
+            year: 1991,
+            event: "MTV Unplugged sparks acoustic revival",
+            contents: [
+                "Acoustic performances became culturally influential.",
+                "Artists embraced more organic arrangements.",
+                "Billboard charts saw a rise in acoustic-driven songs."
+            ],
+            image: "https://ew.com/thmb/AfL5Y11qtqyS7joq9gBns9Rtr8o=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/kurt-cobain-eca1479b11b64710a464b2580aa33fba.jpg"
+        },
+        {
+            year: 2006,
+            event: "Digital production fully replaces traditional studio methods",
+            contents: [
+                "Pro Tools setups became the industry default.",
+                "Reliance on synthetic instruments increased.",
+                "Overall acousticness dipped sharply."
+            ],
+            image: "https://media.sweetwater.com/m/insync/import/Live6-large.jpg"
         },
         {
             year: 2012,
-            event: "Software came out",
+            event: "EDM boom drives historic low in acousticness",
             contents: [
-                "Digital software called xyz came out.",
-                "Was very popular, so blah blah blah",
+                "Calvin Harris, Avicii, and David Guetta defined the chart sound.",
+                "Synthetic leads and electronic drops dominated pop.",
+                "Billboard acousticness reached an all-time low."
             ],
-            image: "https://picsum.photos/1000/500"
+            image: "https://res.cloudinary.com/jerrick/image/upload/d_642250b563292b35f27461a7.png,f_jpg,fl_progressive,q_auto,w_1024/64b39ae7edf3c6001d7b2239.jpg"
+        },
+        {
+            year: 2020,
+            event: "Indie & bedroom pop reintroduce acoustic textures",
+            contents: [
+                "Lo-fi and intimate production gained mainstream traction.",
+                "Acoustic guitars returned to streaming-era pop.",
+                "This reversed years of low acousticness."
+            ],
+            image: "https://images2.alphacoders.com/137/1372963.png"
+        },
+        {
+            year: 2021,
+            event: "Organic, raw songwriting hits the mainstream",
+            contents: [
+                "Artists embraced stripped-down, emotionally honest production.",
+                "Acoustic and semi-acoustic tracks topped charts.",
+                "Acousticness reached its highest point in over a decade."
+            ],
+            image: "https://cdn.mos.cms.futurecdn.net/v6wtvNm6y9mCVFKwcmMBQC-1920-80.jpg"
         },
     ],
     danceablility: [],
