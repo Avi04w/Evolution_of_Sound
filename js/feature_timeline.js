@@ -641,7 +641,44 @@ FEATURE_EVENTS = {
             image: "https://media.voguearabia.com/photos/67dd0d999fb0e0ee5f979157/4:3/w_2560%2Cc_limit/02-175_fn.jpg"
         }
     ],
-    valance: []
+    valence: [
+        {
+            year: 1984,
+            event: "The Peak of Cheerful, Upbeat Pop",
+            contents: [
+                "The early 1980s reached peak musical brightness, fueled by synth-pop, dance-pop, and major-key production.",
+                "Valence levels during this period were among the highest across the entire dataset."
+            ],
+            image: "https://www.rollingstone.com/wp-content/uploads/2023/11/sheffs-80s-REAL-FINALv2.jpg?w=1581&h=1054&crop=1"
+        },
+        {
+            year: 1992,
+            event: "A Shift Toward Darker, Moodier Music",
+            contents: [
+                "The early 1990s marked a notable emotional dip as grunge, alternative rock, and darker forms of hip-hop rose in popularity.",
+                "This era represents one of the steepest multi-year declines in valence."
+            ],
+            image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTe4iMuPJ4ALrWTj7IvCq_9UU5u0Fc-i5oGqw&s"
+        },
+        {
+            year: 2005,
+            event: "The Fall of High-Valence Pop in the 2000s",
+            contents: [
+                "Mid-2000s mainstream music leaned more introspective with emo-pop, R&B ballads, and moodier electronic sounds.",
+                "Valence reached one of its lowest points since the early 1980s, reflecting a tonal shift in the charts."
+            ],
+            image: "https://www.brooklynvegan.com/wp-content/uploads/2022/05/21/attachment-2002-pop-punk-singles.jpeg"
+        },
+        {
+            year: 2018,
+            event: "The Lowest Emotional Tone in Modern Pop",
+            contents: [
+                "Late-2010s music hit the lowest valence values in the entire dataset, coinciding with atmospheric trap, sad pop, and downtempo hip-hop dominating streaming charts.",
+                "Artists like Billie Eilish, Drake, and Post Malone defined a softer, moodier era."
+            ],
+            image: "https://i.ytimg.com/vi/emly-yxenmo/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDpXRA4ywg88OLzSAsLWmHNmKnJWQ"
+        }
+    ]
 };
 
 // --------------------------
