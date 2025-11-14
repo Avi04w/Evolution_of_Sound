@@ -153,9 +153,10 @@ html, body { height: 100%; margin: 0; }
 /* one true scroll container */
 .pageScroller {
     height: 100vh;              /* viewport-sized scroller */
-    overflow-y: auto;           /* this element owns the scroll */
+    overflow-y: scroll;         /* keep scrollbar space reserved */
     scroll-snap-type: y mandatory; /* firm snap; use 'proximity' for softer */
     scroll-padding-top: 0;      /* adjust if you add a fixed header later */
+    scrollbar-gutter: stable both-edges;
 }
 
 /* snap targets (direct children of .pageScroller) */
@@ -166,6 +167,20 @@ html, body { height: 100%; margin: 0; }
     justify-content: center;
     scroll-snap-align: center;  /* <-- centers the target in the viewport */
     scroll-snap-stop: always;   /* don't skip past sections on fast flicks */
+}
+
+/* only for the music-era section: make it a row */
+.pageScroller > .snap.era-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 1rem;
+    gap: 1.5rem;
+}
+
+.pageScroller.no-snap {
+    scroll-snap-type: none;
 }
 
 /* optional: subtle active effect (your JS can toggle .is-active) */
