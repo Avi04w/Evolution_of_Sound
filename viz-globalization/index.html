@@ -55,7 +55,7 @@
                 <option value="52">Annual</option>
               </select>
             </label>
-            <label class="control-label control-label--small">
+            <label class="control-label control-label--small" aria-hidden="true" style="display: none">
               Highlight top exporters
               <input
                 type="number"
@@ -65,6 +65,7 @@
                 max="20"
                 step="1"
                 value="8"
+                disabled
               />
             </label>
             <label class="control-checkbox">
@@ -171,9 +172,7 @@
         </div>
       </section>
       <div class="timeline-bar">
-        <span class="timeline-date">
-          Snapshot: <span data-role="week-label">—</span>
-        </span>
+        <span class="timeline-date" data-role="week-label">—</span>
         <div class="timeline-controls">
           <button type="button" class="control-button" data-role="play-pause">Play</button>
           <input
@@ -186,7 +185,6 @@
             value="0"
             aria-label="Week"
           />
-          <span class="timeline-index" data-role="week-index">0 / 0</span>
           <label class="control-label control-label--timeline">
             Playback speed
             <select id="playback-speed" data-role="playback-speed">

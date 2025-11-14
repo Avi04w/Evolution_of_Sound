@@ -2,7 +2,10 @@ import {
   feature,
   mesh,
 } from "https://cdn.jsdelivr.net/npm/topojson-client@3/+esm";
-import { DEFAULT_FEATURE_KEY, FEATURE_COLOR_MAP } from "./config.js";
+import {
+  DEFAULT_FEATURE_KEY,
+  FEATURE_COLOR_MAP,
+} from "./config.js";
 
 const d3 = window.d3;
 
@@ -14,6 +17,7 @@ const BASELINE_END = new Date("1989-12-31T23:59:59Z");
 const DEFAULT_WINDOW = 4;
 const DEFAULT_TOP_N = 8;
 const DEFAULT_PLAYBACK_SPEED = 200;
+const ENABLE_FEATURE_HOTSPOTS = false;
 
 const FEATURE_OPTIONS = [
   {
@@ -141,6 +145,7 @@ let mapLegendEl = null;
 let divergenceLegendEl = null;
 let mapTooltipEl = null;
 let hotspotDescriptionEl = null;
+let hotspotContainerEl = null;
 let mapContainerEl = null;
 
 const statElements = {
@@ -263,6 +268,10 @@ function cacheDomReferences() {
   hotspotDescriptionEl = document.querySelector(
     "[data-role=hotspot-description]"
   );
+  hotspotContainerEl = document.querySelector("[data-role=pin-legend]");
+  if (!ENABLE_FEATURE_HOTSPOTS && hotspotContainerEl) {
+    hotspotContainerEl.style.display = "none";
+  }
 
   statElements.globalAverage = document.querySelector(
     "[data-stat=globalAverage]"
@@ -639,7 +648,9 @@ function renderForWeek(targetWeek) {
     updateStatPanel(null);
     updateSparklineReadouts(null);
     updateSparklineCursors(null);
-    updateHotspots(null);
+    if (ENABLE_FEATURE_HOTSPOTS) {
+      updateHotspots(null);
+    }
     updateMap(null);
     return;
   }
@@ -658,16 +669,33 @@ function renderForWeek(targetWeek) {
 }
 
 function updateTimelineLabels(date) {
-  if (!timelineLabelEl || !timelineIndexEl) return;
+  if (!timelineLabelEl) return;
   if (!date) {
     timelineLabelEl.textContent = "No data";
-    timelineIndexEl.textContent = "0 / 0";
+    if (timelineIndexEl) {
+      timelineIndexEl.textContent = "";
+    }
     return;
   }
-  timelineLabelEl.textContent = date.toISOString().slice(0, 10);
-  timelineIndexEl.textContent = `${state.currentWeekIndex + 1} / ${
-    weeks.length
-  }`;
+
+  const isoWeek = getIsoWeek(date);
+  timelineLabelEl.textContent = `${isoWeek.year} · Week ${String(
+    isoWeek.week
+  ).padStart(2, "0")}`;
+  if (timelineIndexEl) {
+    timelineIndexEl.textContent = `${state.currentWeekIndex + 1}`;
+  }
+}
+
+function getIsoWeek(date) {
+  const tmp = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+  );
+  const dayNum = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+  return { year: tmp.getUTCFullYear(), week: weekNum };
 }
 
 function computeFeatureTotalsForRows(weekRows, useRankWeight) {
@@ -814,7 +842,9 @@ function updateMap(weekIdx) {
     }
     updateLegend(null);
     updateStatPanel(null);
-    updateHotspots(null);
+    if (ENABLE_FEATURE_HOTSPOTS) {
+      updateHotspots(null);
+    }
     return;
   }
 
@@ -850,7 +880,9 @@ function updateMap(weekIdx) {
     }
     updateLegend(null);
     updateStatPanel(latestAggregation);
-    updateHotspots(null);
+    if (ENABLE_FEATURE_HOTSPOTS) {
+      updateHotspots(null);
+    }
     return;
   }
 
@@ -869,34 +901,33 @@ function updateMap(weekIdx) {
 
   updateLegend(colorizer);
   updateStatPanel(latestAggregation);
-  updateHotspots({ values: mapValues, colorizer });
+  if (ENABLE_FEATURE_HOTSPOTS) {
+    updateHotspots({ values: mapValues, colorizer });
+  }
 }
 
 function buildColorScale(mapValues) {
   const option = FEATURE_LOOKUP.get(state.selectedFeatureKey);
   const values = Array.from(mapValues.values());
 
+  const featureColor = option?.color ?? "#556bce";
+
   if (state.mapMode === "absolute") {
     const baseDomain = option?.domain ?? [0, 1];
-    let minValue = baseDomain[0];
-    let maxValue = baseDomain[1];
-    if (values.length) {
-      minValue = Math.min(...values);
-      maxValue = Math.max(...values);
-      if (Math.abs(maxValue - minValue) < 1e-4) {
-        minValue = baseDomain[0];
-        maxValue = baseDomain[1];
-      }
-    }
+    const [minValue, maxValue] = baseDomain;
     const scale = d3
       .scaleSequential()
       .domain([minValue, maxValue])
       .clamp(true)
-      .interpolator((t) => d3.interpolateYlGnBu(0.1 + 0.9 * t));
+      .interpolator((t) => {
+        const eased = Math.max(0, Math.min(1, t));
+        return d3.interpolateRgb("#f7fafd", featureColor)(eased);
+      });
     return {
-      type: "sequential",
-      domain: [minValue, maxValue],
+      type: "single",
+      domain: [minValue, (minValue + maxValue) / 2, maxValue],
       scale,
+      featureColor,
     };
   }
 
@@ -906,14 +937,26 @@ function buildColorScale(mapValues) {
     ? Math.max(...values.map((v) => Math.abs(v)))
     : 0;
   const domainMax = maxAbs > 0 ? maxAbs : fallback;
+
+  const positiveColor = featureColor;
+  const negativeColor = d3.color(featureColor)?.darker(1.7)?.formatHex() ?? "#2b4c7f";
+
   const scale = d3
     .scaleDiverging([-domainMax, 0, domainMax])
-    .interpolator(d3.interpolateRdBu)
+    .interpolator((value) => {
+      if (value <= 0) {
+        return d3.interpolateRgb("#f8f9fb", negativeColor)(
+          Math.abs(value) / domainMax
+        );
+      }
+      return d3.interpolateRgb("#f8f9fb", positiveColor)(value / domainMax);
+    })
     .clamp(true);
   return {
     type: "diverging",
-    domain: [-domainMax, domainMax],
+    domain: [-domainMax, 0, domainMax],
     scale,
+    featureColor,
   };
 }
 
@@ -929,56 +972,38 @@ function updateLegend(config) {
   const formatter =
     FEATURE_LOOKUP.get(state.selectedFeatureKey)?.formatter ??
     ((v) => formatNumber(v, 2));
+  const labelFormatter =
+    state.mapMode === "absolute" ? formatter : (value) => formatDelta(value);
 
-  if (config.type === "sequential") {
-    const [minValue, maxValue] = config.domain;
-    const steps = 6;
-    const swatchContainer = document.createElement("div");
-    swatchContainer.className = "legend-swatches";
-    d3.range(steps).forEach((idx) => {
-      const t = idx / (steps - 1);
-      const value = minValue * (1 - t) + maxValue * t;
-      const swatch = document.createElement("span");
-      swatch.className = "legend-swatch";
-      swatch.style.background = config.scale(value);
-      swatchContainer.appendChild(swatch);
-    });
-
-    const minLabel = document.createElement("span");
-    minLabel.textContent = formatter(minValue);
-    const maxLabel = document.createElement("span");
-    maxLabel.textContent = formatter(maxValue);
-
-    mapLegendEl.appendChild(minLabel);
-    mapLegendEl.appendChild(swatchContainer);
-    mapLegendEl.appendChild(maxLabel);
-    divergenceLegendEl.textContent = state.normalizeTracks
-      ? "Each origin weighted equally"
-      : "Weighted by chart rank";
-    return;
-  }
-
-  const [minValue, , maxValue] = config.domain;
+  const [minValue, midValue, maxValue] = config.domain;
+  const steps = 7;
   const swatchContainer = document.createElement("div");
   swatchContainer.className = "legend-swatches";
-  d3.range(7).forEach((idx) => {
-    const value = minValue + (idx / 6) * (maxValue - minValue);
+  d3.range(steps).forEach((idx) => {
+    const value = minValue + (idx / (steps - 1)) * (maxValue - minValue);
     const swatch = document.createElement("span");
     swatch.className = "legend-swatch";
     swatch.style.background = config.scale(value);
     swatchContainer.appendChild(swatch);
   });
+
   const minLabel = document.createElement("span");
-  minLabel.textContent = formatDelta(minValue);
+  minLabel.textContent = labelFormatter(minValue);
   const maxLabel = document.createElement("span");
-  maxLabel.textContent = formatDelta(maxValue);
+  maxLabel.textContent = labelFormatter(maxValue);
+
   mapLegendEl.appendChild(minLabel);
   mapLegendEl.appendChild(swatchContainer);
   mapLegendEl.appendChild(maxLabel);
+
   divergenceLegendEl.textContent =
-    state.mapMode === "divergence"
-      ? "Blue: lower than US · Red: higher than US"
-      : "Blue: below 1980s · Red: above 1980s";
+    state.mapMode === "absolute"
+      ? state.normalizeTracks
+        ? "Each origin weighted equally"
+        : "Weighted by chart rank"
+      : state.mapMode === "divergence"
+      ? "Cooler colors = lower vs US · Warmer = higher"
+      : "Cooler colors = below 1980s · Warmer = above";
 }
 
 function updateStatPanel(aggregation) {
@@ -1015,13 +1040,16 @@ function updateStatPanel(aggregation) {
   const entries = Array.from(aggregation.countryValues.entries()).filter(
     ([iso]) => Boolean(resolveFeatureIdForIso(iso))
   );
-  entries.sort((a, b) => (b[1].value ?? -Infinity) - (a[1].value ?? -Infinity));
-  const top = entries[0];
+
   if (statElements.topExporter) {
-    if (top) {
+    if (entries.length) {
+      entries.sort(
+        (a, b) => (b[1].value ?? -Infinity) - (a[1].value ?? -Infinity)
+      );
+      const [iso, info] = entries[0];
       statElements.topExporter.textContent = `${formatCountryName(
-        top[0]
-      )} · ${formatter(top[1].value)}`;
+        iso
+      )} · ${formatter(info.value)}`;
     } else {
       statElements.topExporter.textContent = "—";
     }
