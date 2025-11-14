@@ -565,7 +565,44 @@ FEATURE_EVENTS = {
             image: "https://viberate-upload.ams3.cdn.digitaloceanspaces.com/prod/com/article/top-5-streaming-platforms-for-talent-discovery-ranked-by-aandrs-music-industry-survey-YHPM9"
         }
     ],
-    speechieness: [],
+    speechiness: [
+        {
+            year: 1993,
+            event: "Rap and Hip-Hop Enter Mainstream Pop",
+            contents: [
+                "The early 1990s saw rap and hip-hop cross fully into mainstream charts, bringing more spoken-word elements into popular music.",
+                "This shift is reflected in the noticeable rise in speechiness beginning in the early 90s."
+            ],
+            image: "https://i8.amplience.net/i/naras/wu-tang-clan_MI0003661639-MN0000959876"
+        },
+        {
+            year: 2004,
+            event: "Pop Embraces Rhythmic, Talk-Driven Hooks",
+            contents: [
+                "Mid-2000s pop leaned heavily on rhythmic vocal delivery—think R&B-inspired verses, talk-sung hooks, and ad-libs.",
+                "Songs increasingly blurred the line between singing and speaking, contributing to speechiness levels peaking around this period."
+            ],
+            image: "https://www.rollingstone.com/wp-content/uploads/2025/05/one-hit-wonders-50-list-lead.jpg?w=1581&h=1054&crop=1"
+        },
+        {
+            year: 2016,
+            event: "Trap Dominates the Charts",
+            contents: [
+                "The rise of trap brought talk-like rap flows, sparse beats, and heavy ad-lib culture to mainstream music.",
+                "This led to the largest spike in speechiness across the entire timeline as trap artists topped global charts."
+            ],
+            image: "https://promusicianhub.com/wp-content/uploads/2022/01/best-trap-songs.jpg"
+        },
+        {
+            year: 2019,
+            event: "Streaming Playlists Boost Spoken-Word Vocal Styles",
+            contents: [
+                "Spotify and Apple Music playlists favored punchy, conversational vocal delivery that grabbed attention instantly.",
+                "Shorter song formats and more talk-based verses helped push speechiness to sustained high levels in the late 2010s."
+            ],
+            image: "https://storage.googleapis.com/pr-newsroom-wp/1/2024/05/CLASSICS-Hip-Hop-FTR-Header-1-1440x1440.jpg"
+        }
+    ],
     tempo: [],
     valance: []
 };
