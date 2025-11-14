@@ -89,6 +89,22 @@ export class InteractionManager {
             this.tooltip.style.display = 'none';
             this.hoveredPoint = null;
         });
+
+        // Add click listener to play song
+        renderer.domElement.addEventListener('click', () => {
+            // Use the same raycasting logic as mousemove to find the clicked point
+            if (this.hoveredPoint !== null) {
+                const trackData = this.dataManager.getTrackData()[this.hoveredPoint];
+                if (trackData && trackData.id) {
+                    // Post a message to the parent window to request playing the song.
+                    // This is necessary because this script runs in an iframe.
+                    window.parent.postMessage({
+                        type: 'play-spotify-track',
+                        trackId: trackData.id
+                    }, '*'); // In a real-world scenario, you'd restrict the target origin for security.
+                }
+            }
+        });
     }
     
     /**

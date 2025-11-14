@@ -187,6 +187,28 @@ class MusicUniverseVisualization {
             });
             this.uiManager.setupEventListeners(this.options);
             this.uiManager.setupIntersectionObserver();
+
+            // Listen for messages from the parent window
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'set-feature') {
+                    const feature = event.data.feature;
+                    this.updateColors(feature, true);
+
+                    // Also update the dropdown in the iframe to match
+                    const dropdown = document.getElementById('color-feature');
+                    if (dropdown) {
+                        dropdown.value = feature;
+                        dropdown.classList.remove('placeholder-active');
+                        const clearButton = document.getElementById('clear-color');
+                        if (clearButton) {
+                            clearButton.classList.remove('hidden');
+                        }
+                    }
+                }
+            });
+
+            // Request the initial feature from the parent window
+            window.parent.postMessage({ type: 'get-initial-feature' }, '*');
             
             console.log('Three.js visualization ready');
         } catch (error) {

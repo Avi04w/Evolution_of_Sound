@@ -280,7 +280,29 @@
         if (titleEl) {
             titleEl.childNodes[0].textContent = "A Final Look at ";
         }
+
+        // 7. update the universe visualization
+        const universeIframe = document.querySelector('.universe-embed');
+        if (universeIframe && universeIframe.contentWindow) {
+            universeIframe.contentWindow.postMessage({
+                type: 'set-feature',
+                feature: f
+            }, '*');
+        }
     }
+
+    // Listen for requests from the iframe
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'get-initial-feature') {
+            const universeIframe = document.querySelector('.universe-embed');
+            if (universeIframe && universeIframe.contentWindow) {
+                universeIframe.contentWindow.postMessage({
+                    type: 'set-feature',
+                    feature: window.feature // Send the current global feature
+                }, '*');
+            }
+        }
+    });
 </script>
 </body>
 </html>

@@ -74,4 +74,14 @@ document.addEventListener('DOMContentLoaded', function () {
         showBtn.style.display = 'none';
         try { localStorage.removeItem('spotifyHidden'); } catch (e) { /* ignore */ }
     });
+
+    // Listen for messages from iframes
+    window.addEventListener('message', function(event) {
+        // IMPORTANT: Add a security check for the origin of the message
+        // For example: if (event.origin !== 'https://your-trusted-domain.com') return;
+
+        if (event.data && event.data.type === 'play-spotify-track' && event.data.trackId) {
+            showSpotifyPlayer(event.data.trackId);
+        }
+    });
 });
