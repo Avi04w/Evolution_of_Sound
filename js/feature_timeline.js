@@ -101,7 +101,7 @@ class FeatureTimeline {
         color.domain([0, maxVal]);
         const [yMin, yMax] = vis.yScale.domain();
         const midFeatureVal = (yMin + yMax) / 2
-        console.log(midFeatureVal)
+
         vis.linePath
             .datum(vis.timeline)
             .transition()
