@@ -1,0 +1,222 @@
+/* ========= layout host for timeline + panel ========= */
+
+.era-layout {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 3rem 2.5rem 5rem;
+
+    display: flex;
+    gap: 3rem;
+    align-items: center;        /* center nav + panel relative to each other */
+}
+
+/* left column: fixed width timeline */
+
+.era-nav-wrap {
+    flex: 0 0 80px;             /* ~80px column */
+    transform: scale(1.8);          /* try 1.2–1.6 */
+    transform-origin: left center;  /* grow outwards to the right */
+}
+
+#era-nav {
+    display: block;
+    height: 420px;              /* explicit height so we can match the panel */
+}
+
+/* ========= nav line + ticks ========= */
+
+.nav-tick {
+    cursor: pointer;
+}
+
+/* vertical line */
+.nav-line {
+    stroke: #272727;
+    stroke-width: 2;
+    stroke-linecap: round;
+    opacity: 0.7;
+}
+
+/* small circle dot */
+.nav-dot {
+    fill: #3a3a3a;
+    opacity: 0.35;
+    r: 4px;
+    transition: opacity 180ms ease, fill 180ms ease, r 180ms ease;
+}
+
+/* year label text (like '1980s', '1990s') */
+.nav-label {
+    fill: #4b5563;
+    opacity: 0.4;
+    font-size: 1.05rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: none;
+    dominant-baseline: middle;
+    transition:
+            opacity 180ms ease,
+            fill 180ms ease,
+            font-weight 180ms ease;
+}
+
+/* hover hint */
+.nav-tick:hover .nav-label {
+    opacity: 0.7;
+}
+
+/* active state */
+
+.nav-tick.active .nav-label {
+    fill: #e5e7eb;
+    opacity: 1;
+    font-weight: 600;
+}
+
+.nav-tick.active .nav-dot {
+    fill: #3b82f6;
+    opacity: 1;
+    r: 6px;
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.9));
+}
+
+/* ========= right-side panel stack ========= */
+
+.era-panels {
+    flex: 1 1 auto;
+    position: relative;
+
+    height: calc(420px * 1.4);  /* same factor as scale above */
+    display: flex;
+    align-items: center;        /* center active panel vertically */
+    overflow: visible;
+}
+
+/* hide/show panels */
+
+.era-panel {
+    display: none;
+    width: 100%;
+}
+
+.era-panel.active {
+    display: block;
+}
+
+/* card shell */
+
+.era-panel-inner {
+    background: radial-gradient(circle at top left, #171923 0, #050608 60%);
+    border-radius: 20px;
+    padding: 1.8rem 2rem 2.2rem;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    width: 100%;
+    margin-left: 12rem;         /* pushes card away from the line */
+}
+
+/* header text */
+
+.era-label {
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 0.35rem;
+}
+
+.era-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    color: #f3f4f6;
+    text-transform: none;
+}
+
+.era-subtitle {
+    font-size: 0.98rem;
+    color: #d1d5db;
+    margin: 0 0 1.2rem;
+}
+
+/* two-column layout inside card */
+
+.era-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.era-copy {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: #e5e7eb;
+}
+
+/* ========= mini feature viz ========= */
+
+.era-feature-viz {
+    border-radius: 16px;
+    background: linear-gradient(145deg, rgba(15,23,42,0.9), rgba(30,64,175,0.65));
+    padding: 1.1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.feature-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.feature-pill {
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(191, 219, 254, 0.26);
+    font-size: 0.72rem;
+    color: #e5e7eb;
+}
+
+.feature-bars {
+    display: flex;
+    gap: 0.25rem;
+    align-items: flex-end;
+    height: 44px;
+}
+
+.feature-bar {
+    flex: 1;
+    border-radius: 999px;
+    background: rgba(191, 219, 254, 0.8);
+    opacity: 0.45;
+}
+
+.feature-bar.highlight {
+    opacity: 1;
+}
+
+/* ========= responsive ========= */
+
+@media (max-width: 880px) {
+    .era-layout {
+        flex-direction: column;
+        align-items: flex-start;
+        padding-inline: 1.25rem;
+    }
+
+    .era-panels {
+        height: auto;
+        display: block;
+    }
+
+    .era-panel-inner {
+        margin-left: 0;
+    }
+
+    .era-inner {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
