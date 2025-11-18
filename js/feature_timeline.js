@@ -106,20 +106,16 @@ class FeatureTimeline {
             || d3.scaleSequential(d3.interpolateBlues); // fallback just in case
 
         const maxVal = d3.max(vis.timeline, d => d.value);
-        // guard against invalid maxVal and set domain
-        const domainLow = 0;
-        const domainHigh = (maxVal == null || !isFinite(maxVal)) ? 1 : maxVal;
-        color.domain([domainLow, domainHigh]);
-
-        // use the midpoint of the color domain for the stroke
-        const colorMid = (domainLow + domainHigh) / 2;
+        color.domain([0, maxVal]);
+        const [yMin, yMax] = vis.yScale.domain();
+        const midFeatureVal = (yMin + yMax) / 2
 
         vis.linePath
             .datum(vis.timeline)
             .transition()
             .duration(800)
             .attr("d", lineGen)
-            .attr("stroke", color(colorMid));
+            .attr("stroke", color(maxVal));
 
         // --- set chart title color to match the feature color ---
         try {
