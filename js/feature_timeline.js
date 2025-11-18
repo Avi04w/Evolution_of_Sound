@@ -38,6 +38,14 @@ class FeatureTimeline {
             .append("div")
             .attr("class", "event-tooltip")
 
+        vis.svg.append("text")
+            .attr("class", "chart-subtitle")
+            .attr("x", (vis.width + vis.margin.left + vis.margin.right) / 2)
+            .attr("y", 15)
+            .attr("text-anchor", "middle")
+            // .attr("font-size", 14)
+            .text("Click on the red circles to learn about key events that influenced this feature over time.");
+
         this.loadData();
     }
 
@@ -98,16 +106,38 @@ class FeatureTimeline {
             || d3.scaleSequential(d3.interpolateBlues); // fallback just in case
 
         const maxVal = d3.max(vis.timeline, d => d.value);
-        color.domain([0, maxVal]);
-        const [yMin, yMax] = vis.yScale.domain();
-        const midFeatureVal = (yMin + yMax) / 2
+        // guard against invalid maxVal and set domain
+        const domainLow = 0;
+        const domainHigh = (maxVal == null || !isFinite(maxVal)) ? 1 : maxVal;
+        color.domain([domainLow, domainHigh]);
+
+        // use the midpoint of the color domain for the stroke
+        const colorMid = (domainLow + domainHigh) / 2;
 
         vis.linePath
             .datum(vis.timeline)
             .transition()
             .duration(800)
             .attr("d", lineGen)
-            .attr("stroke", color(maxVal));
+            .attr("stroke", color(colorMid));
+
+        // --- set chart title color to match the feature color ---
+        try {
+            const titleEl = document.querySelector("#feature-timeline-section .chart-title");
+            // guard against invalid maxVal
+            const safeMax = (maxVal == null || !isFinite(maxVal)) ? 1 : maxVal;
+            const featureColor = color(safeMax);
+            if (titleEl) {
+                // set a CSS variable used by the stylesheet to color the title and underline
+                titleEl.style.setProperty('--feature-color', featureColor);
+            }
+            // also update the standalone title span color if present (keeps inline spans consistent)
+            const titleSpan = document.getElementById('feature-timeline-title');
+            if (titleSpan) titleSpan.style.color = featureColor;
+        } catch (e) {
+            // fail silently if DOM isn't ready for some reason
+            console.warn('Could not update feature title color', e);
+        }
 
         vis.xAxis
             .transition()
@@ -334,7 +364,7 @@ class FeatureTimeline {
 
     eventTooltipHTML(d) {
         return `
-            <img src=${d.image}>
+            <img src=${d.image} alt="${(d.event || 'event image').replace(/"/g, '&quot;')}">
             <div id="event-title"><strong>${d.event}</strong> (${d.year})</div>
             <div id="event-content-container">
                 ${d.contents.map((text) => {
@@ -704,37 +734,41 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const selector = document.getElementById("feature-select");
 
-    selector.addEventListener("change", () => {
-        featureTimeline.setFeature(selector.value);
+    if (selector) {
+        selector.addEventListener("change", () => {
+            featureTimeline.setFeature(selector.value);
 
-        const title = document.querySelector("#feature-timeline-section .chart-title");
-        title.textContent =
-            "A Final Look at " +
-            selector.value.charAt(0).toUpperCase() +
-            selector.value.slice(1);
-    });
+            const titleSpan = document.getElementById('feature-timeline-title');
+            if (titleSpan) {
+                titleSpan.textContent = selector.value.charAt(0).toUpperCase() + selector.value.slice(1);
+            } else {
+                const title = document.querySelector("#feature-timeline-section .chart-title");
+                if (title) {
+                    title.textContent = "A Final Look at " + selector.value.charAt(0).toUpperCase() + selector.value.slice(1);
+                }
+            }
+        });
+    }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
 
     const mainSelect = document.getElementById("feature-select");
-    const titleSelect = document.getElementById("feature-title-select");
+    const titleSpan = document.getElementById("feature-timeline-title");
 
-    // initialize title dropdown to match global `feature`
-    titleSelect.value = feature;
+    // initialize main select and title span to match global `feature`
+    if (mainSelect) mainSelect.value = feature;
+    if (titleSpan) titleSpan.textContent = feature.charAt(0).toUpperCase() + feature.slice(1);
 
     // === when main dropdown changes ===
-    mainSelect.addEventListener("change", () => {
-        const f = mainSelect.value;
+    if (mainSelect) {
+        mainSelect.addEventListener("change", () => {
+            const f = mainSelect.value;
 
-        feature = f;                       // update global
-        titleSelect.value = f;             // sync title dropdown
-        featureTimeline.setFeature(f);     // update timeline
-    });
-
-    // === when title dropdown changes ===
-    titleSelect.addEventListener("change", (e) => {
-        setGlobalFeature(e.target.value);
-    });
+            feature = f;                       // update global
+            if (titleSpan) titleSpan.textContent = f.charAt(0).toUpperCase() + f.slice(1);
+            if (window.featureTimeline) featureTimeline.setFeature(f);     // update timeline
+        });
+    }
 
 });

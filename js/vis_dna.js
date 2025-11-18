@@ -154,44 +154,30 @@ class VisDNA {
 
 
     createDropdown() {
-        const container = d3.select(this.selector);
-        // insert a label before the SVG so it appears to the left of the dropdown
-        const label = container.insert("label", "svg")
-            .attr("for", "visdna-feature-select")
-            .style("margin-bottom", "12px")
-            .style("margin-right", "8px")
-            .style("font-size", "14px")
-            .style("color", "#333")
-            .style("vertical-align", "middle")
-            .text("Select a Feature:");
-        const dropdown = container.insert("select", "svg")
-            .attr("id", "visdna-feature-select")
-            .style("display", "inline-block")
-            .style("margin-bottom", "12px")
-            .style("padding", "8px 14px")
-            .style("font-size", "14px")
-            .style("border", "1px solid #ccc")
-            .style("border-radius", "6px")
-            .style("background-color", "white")
-            .style("color", "#333")
-            .style("box-shadow", "0 2px 4px rgba(0,0,0,0.05)")
-            .style("cursor", "pointer")
-            .on("change", (event) => {
-                this.feature = event.target.value;
+        // Instead of inserting a local dropdown, attach to the persistent top-left selector
+        // present in `index.html` (#persistent-feature-select). This keeps a single global
+        // control for feature selection.
+        const sel = document.getElementById('persistent-feature-select');
+        if (!sel) return;
+
+        // Ensure the persistent control reflects the current feature
+        try { sel.value = this.feature; } catch (e) { /* ignore if value not valid */ }
+
+        // On change, prefer calling the global setGlobalFeature (defined in index.html).
+        // If that function isn't present, fall back to updating global state and this instance.
+        sel.addEventListener('change', (e) => {
+            const v = e.target.value;
+            if (typeof window.setGlobalFeature === 'function') {
+                window.setGlobalFeature(v);
+            } else {
+                // minimal fallback: update global and this instance
+                window.feature = v;
+                this.feature = v;
                 this.setColorScales();
                 this.updateLegend();
                 this.updateDescription();
-
-                setGlobalFeature(event.target.value);
-            });
-
-        dropdown.selectAll("option")
-            .data(this.features.sort())
-            .enter()
-            .append("option")
-            .attr("value", d => d)
-            .text(d => d[0].toUpperCase() + d.slice(1))
-            .property("selected", d => d === this.feature);
+            }
+        });
     }
 
     setColorScales() {
@@ -398,7 +384,7 @@ class VisDNA {
             const xPos = this.x(d[0].x);
 
             // focus factor for this bar (0..1)
-            const f = this.focus[i] || 0;
+            // (focus value is tracked elsewhere but not required for current drawing math)
 
             // Update circles (dots)
             g.selectAll("circle")
@@ -412,15 +398,7 @@ class VisDNA {
                 .attr("fill-opacity", 1);
 
             // Update connecting line (bar)
-            // compute base endpoints
-            const baseYTop = this.y(d[1].y) + inverted * this.z(d[1].z);
-            const baseYBottom = this.y(d[0].y) - inverted * this.z(d[0].z);
-            // target endpoints for a fully centered (vertical) helix at this index
-            const targetYTop = this.y(1) + inverted * this.z(d[1].z);
-            const targetYBottom = this.y(-1) - inverted * this.z(d[0].z);
-
-            // blend endpoints towards target based on focus factor for smooth verticalization
-            const lerp = (a, b, t) => a + (b - a) * t;
+            // compute visible endpoints
             const yTop = this.y(d[1].y) + inverted * this.z(d[1].z);
             const yBottom = this.y(d[0].y) - inverted * this.z(d[0].z);
 
@@ -501,8 +479,6 @@ class VisDNA {
                     .style("opacity", 0)
                     .style("transform", "translateY(30px)");
 
-                // Clear any previous yearly content
-                yearlyContainer.selectAll("*").remove();
 
                 // --- Add a simple loading indicator ---
                 const loadingText = yearlyContainer.append("div")

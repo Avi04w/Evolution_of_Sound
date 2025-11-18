@@ -14,6 +14,22 @@
 </head>
 <body>
 
+<!-- Persistent top-left feature control (presentational only, not wired up) -->
+<div id="persistent-feature-control" class="hidden">
+    <div id="persistent-feature-panel" role="dialog" aria-modal="false" aria-label="Feature options">
+        <label for="persistent-feature-select" style="font-size: 13px">Select Feature: </label>
+        <select id="persistent-feature-select" aria-label="Select musical feature (persistent control)">
+            <option value="acousticness">Acousticness</option>
+            <option value="danceability">Danceability</option>
+            <option value="energy">Energy</option>
+            <option value="loudness">Loudness</option>
+            <option value="speechiness">Speechiness</option>
+            <option value="tempo">Tempo</option>
+            <option value="valence">Valence</option>
+        </select>
+    </div>
+</div>
+
 <!-- single scroll container -->
 <div class="pageScroller">
 
@@ -45,7 +61,7 @@
         <audio id="player"></audio>
     </section>
 
-    <section class="era-section snap">
+    <section class="snap vis-section" id="era-section">
         <div class="era-heading">
             <h2 class="era-title-main">Most Popular Genres Every Five Years</h2>
             <p class="era-title-sub">billboard top-chart data grouped into 5-year eras</p>
@@ -111,15 +127,21 @@
     <section class="vis-section snap" id="dna-section">
         <div class="text-block">
             <h3>The DNA of Music</h3>
-            <p>
+        </div>
+        <div id="vis-dna" class="chart-space">
+            <p class="dna-description">
                 Together, these features form the “genetic code” of a song, much like DNA encodes biological traits.
                 This visualization represents how the average musical features of Billboard-charting songs have evolved each year since 1980.
                 Each vertical bar corresponds to one year, with color intensity encoding the value of the selected feature (for example, higher energy or greater acousticness).
                 Hovering over a bar shows the specific feature value for that year, and clicking on it transitions to a detailed yearly view that displays the top 10 longest-charting #1 songs, their artists, and their feature measurements.
             </p>
         </div>
-        <div id="vis-dna" class="chart-space"></div>
-        <div id="vis-dna-yearly" class="chart-space" style="display:none"></div>
+        <div id="vis-dna-yearly" class="chart-space" style="display:none">
+            <p class="dna-description">
+                These are the top 10 longest-charting #1 songs for <span id="dna-year-label">[YEAR]</span>.
+                Each Helix represents a song, with the color indicating its <span id="visdna-feature-label">[FEATURE]</span> value.
+            </p>
+        </div>
     </section>
 
     <!-- Universe -->
@@ -151,15 +173,7 @@
         <div class="chart-container">
             <h2 class="chart-title">
                 A Final Look at
-                <select id="feature-title-select" class="feature-title-dropdown">
-                    <option value="acousticness">Acousticness</option>
-                    <option value="danceability">Danceability</option>
-                    <option value="energy">Energy</option>
-                    <option value="loudness">Loudness</option>
-                    <option value="speechiness">Speechiness</option>
-                    <option value="tempo">Tempo</option>
-                    <option value="valence">Valence</option>
-                </select>
+                <span id="feature-timeline-title">Acousticness</span>
             </h2>
             <p class="chart-description"></p>
             <div id="feature-timeline-vis" class="chart-space"></div>
@@ -204,12 +218,13 @@
 <!-- JS Scripts -->
 <script src="js/spotify_player.js"></script>
 <script src="js/vinyl_record.js"></script>
-<script src="js/vis_bubble.js"></script>
+<script src="js/eras.js"></script>
 <script src="js/vis_dna_yearly.js"></script>
 <script src="js/vis_dna.js"></script>
+<script src="js/vis_bubble.js"></script>
 <script src="js/scroll_snap.js"></script>
-<script src="js/treemap.js"></script>
-<script src="js/eras.js"></script>
+<!--<script src="js/treemap.js"></script>-->
+<script src="js/feature_timeline.js"></script>
 
 <script>
     // Provide detailed explanations for each audio feature and expose a global `feature` variable
@@ -265,15 +280,6 @@
     // The VisDNA instance is created after this script block below in the original file — keep that timing.
 </script>
 
-<!-- JS Scripts -->
-<script src="js/spotify_player.js"></script>
-<script src="js/vinyl_record.js"></script>
-<script src="js/vis_bubble.js"></script>
-<script src="js/vis_dna_yearly.js"></script>
-<script src="js/vis_dna.js"></script>
-<script src="js/scroll_snap.js"></script>
-<script src="js/treemap.js"></script>
-<script src="js/feature_timeline.js"></script>
 <script>
     // expose the instance on window so other scripts (like the top-level feature selector) can call methods on it
     window.dnaVis = new VisDNA("#vis-dna", { height: 360, feature: feature});
@@ -287,11 +293,11 @@
 
         // 2. sync all dropdowns
         const top = document.getElementById("feature-select");
-        const title = document.getElementById("feature-title-select");
+        const titleSpan = document.getElementById("feature-timeline-title");
         const dna = document.getElementById("visdna-feature-select");
 
         if (top) top.value = f;
-        if (title) title.value = f;
+        if (titleSpan) titleSpan.textContent = f.charAt(0).toUpperCase() + f.slice(1);
         if (dna) dna.value = f;
 
         // 3. update feature descriptions in main text
@@ -313,10 +319,7 @@
         }
 
         // 6. update the title label text
-        const titleEl = document.querySelector("#feature-timeline-section .chart-title");
-        if (titleEl) {
-            titleEl.childNodes[0].textContent = "A Final Look at ";
-        }
+        // Keep the chart title start text intact; the visible feature name is handled by the span above
 
         // 7. update the universe visualization
         const universeIframe = document.querySelector('.universe-embed');

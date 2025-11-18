@@ -4,23 +4,98 @@
     const header = document.querySelector('header');
     const watched = [header, ...sections].filter(Boolean);
 
-    // highlight whichever section is mostly in view
+    const hideIds = new Set([
+        'conclusion-section',
+        'era-section',
+        'bubble-section',
+        'feature-selection-section',
+        'record-player-container'
+    ]);
+
+    let mostVisible = null;
+    let debounceTimer = null;
+    let lastIOTimestamp = 0;
+
+    function computeMostVisibleFallback() {
+        const all = [header, ...sections].filter(Boolean);
+        const viewportTop = window.scrollY;
+        const viewportBottom = viewportTop + window.innerHeight;
+
+        let best = { id: null, ratio: 0 };
+
+        for (const el of all) {
+            const rect = el.getBoundingClientRect();
+            const top = rect.top + window.scrollY;
+            const bottom = rect.bottom + window.scrollY;
+
+            const visible = Math.min(bottom, viewportBottom) - Math.max(top, viewportTop);
+            const ratio = visible / rect.height;
+
+            if (ratio > best.ratio) {
+                best = { id: el.id, ratio };
+            }
+        }
+
+        return best.id;
+    }
+
+    function applyVisibility(id) {
+        const persistentEl = document.getElementById('persistent-feature-control');
+        if (!persistentEl) return;
+
+        const shouldHide = hideIds.has(id);
+        persistentEl.classList.toggle('hidden', shouldHide);
+    }
+
     const io = new IntersectionObserver((entries) => {
-        entries.forEach(e => {
-            const el = e.target;
+        lastIOTimestamp = performance.now();
+
+        // Highlight logic
+        entries.forEach(entry => {
+            let el = entry.target;
             if (el.classList.contains('vis-section')) {
-                if (e.isIntersecting && e.intersectionRatio >= 0.6) {
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
                     el.classList.add('is-active');
                 } else {
                     el.classList.remove('is-active');
                 }
             }
         });
-    }, { root: null, threshold: [0.0, 0.6, 1.0] });
+
+        // Determine most visible
+        const candidates = entries
+            .filter(e => e.isIntersecting)
+            .map(e => ({ id: e.target.id, ratio: e.intersectionRatio }));
+
+        if (candidates.length > 0) {
+            const top = candidates.reduce((a, b) => (a.ratio > b.ratio ? a : b));
+            mostVisible = top.id;
+        }
+
+        // Debounced update
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => applyVisibility(mostVisible), 100);
+    }, {
+        root: null,
+        threshold: Array.from({ length: 11 }, (_, i) => i / 10)
+    });
 
     watched.forEach(el => io.observe(el));
 
-    // optional: keyboard navigation between snap points
+    window.addEventListener('scroll', () => {
+        const now = performance.now();
+
+        // IO fired in last 120ms → use IO state (smooth)
+        if (now - lastIOTimestamp < 120) return;
+
+        // IO stale → use fallback
+        const fallbackId = computeMostVisibleFallback();
+        applyVisibility(fallbackId);
+    }, { passive: true });
+
+
+    watched.forEach(el => io.observe(el));
+
     window.addEventListener('keydown', (ev) => {
         if (['ArrowDown','PageDown',' '].includes(ev.key)) {
             ev.preventDefault();
@@ -47,7 +122,6 @@
         next?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-// js/scrollSnap.js (replace the existing DOMContentLoaded handler)
     document.addEventListener('DOMContentLoaded', function () {
         const hint = document.getElementById('scroll-hint');
         const targets = ['bubble-section', 'feature-selection-section']

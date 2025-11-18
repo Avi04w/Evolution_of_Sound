@@ -13,6 +13,15 @@
   text-align: center;
 
   margin: 0 0 12px;
+
+  /* new: allow the feature color to be injected via a CSS variable */
+  color: var(--feature-color, #1f2937); /* fallback dark slate */
+  transition: color 420ms cubic-bezier(.2,.9,.3,1), text-shadow 420ms ease;
+
+  /* slightly larger and nicer typography */
+  font-size: clamp(1.4rem, 2.8vw, 2rem);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .event-tooltip {
