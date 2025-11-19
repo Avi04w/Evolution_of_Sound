@@ -545,6 +545,8 @@ class VisDNA {
                     .ease(d3.easeCubicOut)
                     .style("opacity", 1)
                     .style("transform", "translateY(0)");
+
+                window._applyPersistentVisibility('dna-section');
             });
     }
 

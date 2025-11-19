@@ -43,9 +43,36 @@
         const persistentEl = document.getElementById('persistent-feature-control');
         if (!persistentEl) return;
 
+
+        // Check if dna-section is the current most visible
+        const dnaSection = document.getElementById('dna-section');
+
+        if (dnaSection.classList.contains('is-active')) {
+            const dnaMain = document.getElementById('vis-dna');
+            const dnaYearly = document.getElementById('vis-dna-yearly');
+
+            if (id === 'dna-section') {
+                // Case 1: yearly hidden → show persistent selector
+                if (dnaMain && dnaMain.style.display === 'none' &&
+                    dnaYearly && dnaYearly.style.display !== 'none') {
+                    console.log("hide persistent");
+                    persistentEl.classList.add('hidden');
+                    return;
+                }
+
+                // Case 2: yearly visible → don't show persistent selector
+                if (dnaYearly && dnaYearly.style.display !== 'none') {
+                    persistentEl.classList.remove('hidden');
+                    return;
+                }
+            }
+        }
+
         const shouldHide = hideIds.has(id);
         persistentEl.classList.toggle('hidden', shouldHide);
     }
+
+    window._applyPersistentVisibility = applyVisibility;
 
     const io = new IntersectionObserver((entries) => {
         lastIOTimestamp = performance.now();

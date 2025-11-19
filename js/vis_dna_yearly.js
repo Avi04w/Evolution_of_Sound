@@ -517,6 +517,8 @@ const FEATURE_BOUNDS = {
                         .duration(800)
                         .ease(d3.easeCubicOut)
                         .style("opacity", 1);
+
+                    window._applyPersistentVisibility('dna-section');
                 });
         }
 
