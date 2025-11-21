@@ -24,20 +24,6 @@
             </p>
           </div>
           <div class="map-controls" data-role="map-controls">
-            <label class="control-label">
-              Feature
-              <select id="feature-select" data-role="feature-select">
-                <option value="acousticness" selected>Acousticness</option>
-                <option value="danceability">Danceability</option>
-                <option value="energy">Energy</option>
-                <option value="loudness">Loudness</option>
-                <option value="valence">Valence</option>
-                <option value="instrumentalness">Instrumentalness</option>
-                <option value="speechiness">Speechiness</option>
-                <option value="liveness">Liveness</option>
-                <option value="tempo">Tempo</option>
-              </select>
-            </label>
             <label class="control-label" style="display: none" aria-hidden="true">
               Map metric
               <select id="map-mode" data-role="map-mode" disabled>
@@ -187,12 +173,12 @@
             aria-label="Week"
           />
           <label class="control-label control-label--timeline">
-            Playback speed
-            <select id="playback-speed" data-role="playback-speed">
-              <option value="100">Ultra-fast</option>
-              <option value="200" selected>Normal</option>
-              <option value="400">Slow</option>
-              <option value="800">Very slow</option>
+            Timeline step
+            <select id="tick-interval" data-role="tick-interval">
+              <option value="1">Weekly</option>
+              <option value="4">Monthly</option>
+              <option value="26" selected>6 months</option>
+              <option value="52">Yearly</option>
             </select>
           </label>
         </div>
