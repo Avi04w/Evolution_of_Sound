@@ -98,18 +98,36 @@ export class SceneManager {
     /**
      * Create point cloud from track data
      */
-    createPointCloud(trackData) {
+    createPointCloud(trackData, initialFeature = 'acousticness') {
         this.geometry = new THREE.BufferGeometry();
         
         const positions = new Float32Array(trackData.length * 3);
         const colors = new Float32Array(trackData.length * 3);
         const alphas = new Float32Array(trackData.length);
         
+        // Initialize with acousticness colors
+        const featureValues = trackData.map(d => d[initialFeature] || 0);
+        const min = Math.min(...featureValues);
+        const max = Math.max(...featureValues);
+        const range = max - min;
+        
+        // Acousticness color scale: #d5e9ff to #012b42
+        const startColor = [0.835, 0.914, 1.0];
+        const endColor = [0.004, 0.169, 0.259];
+        
         trackData.forEach((d, i) => {
             positions[i * 3] = d.pc0 || 0;
             positions[i * 3 + 1] = d.pc1 || 0;
             positions[i * 3 + 2] = d.pc2 || 0;
-            alphas[i] = 1.0;
+            
+            // Normalize feature value and compute color
+            const value = d[initialFeature] || 0;
+            const normalized = range === 0 ? 0 : Math.max(0, Math.min(1, (value - min) / range));
+            
+            colors[i * 3] = Math.max(0, Math.min(1, startColor[0] + (endColor[0] - startColor[0]) * normalized));
+            colors[i * 3 + 1] = Math.max(0, Math.min(1, startColor[1] + (endColor[1] - startColor[1]) * normalized));
+            colors[i * 3 + 2] = Math.max(0, Math.min(1, startColor[2] + (endColor[2] - startColor[2]) * normalized));
+            alphas[i] = 0.8;
         });
         
         this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -161,8 +179,9 @@ export class SceneManager {
         
         this.points = new THREE.Points(this.geometry, material);
         this.scene.add(this.points);
+        this.initialFeature = initialFeature;
         
-        console.log(`Created point cloud with ${trackData.length} points`);
+        console.log(`Created point cloud with ${trackData.length} points, initialized with ${initialFeature}`);
     }
     
     /**
@@ -456,4 +475,5 @@ export class SceneManager {
     getGeometry() { return this.geometry; }
     getPoints() { return this.points; }
     getFeatureColors() { return this.featureColors; }
+    getInitialFeature() { return this.initialFeature; }
 }

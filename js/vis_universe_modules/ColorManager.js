@@ -15,6 +15,7 @@ export class ColorManager {
         this.currentColorFeature = 'none';
         this.animationFrameId = null;
         this.showLoadings = false;
+        this.isReady = false;
         
         // For filtering
         this.selectedGenre = null;
@@ -57,7 +58,10 @@ export class ColorManager {
     updateColors(feature, animate = true) {
         const trackData = this.dataManager.getTrackData();
         const geometry = this.sceneManager.getGeometry();
-        if (!geometry) return;
+        if (!geometry) {
+            console.warn('Geometry not ready, skipping color update');
+            return;
+        }
         
         // Cancel any ongoing animation first
         if (this.animationFrameId) {
@@ -68,14 +72,32 @@ export class ColorManager {
         const colorAttribute = geometry.getAttribute('color');
         const alphaAttribute = geometry.getAttribute('alpha');
         
+        // Validate attributes exist and have correct size
+        if (!colorAttribute || !alphaAttribute) {
+            console.warn('Color attributes not ready, skipping update');
+            return;
+        }
+        
+        if (colorAttribute.array.length !== trackData.length * 3 || 
+            alphaAttribute.array.length !== trackData.length) {
+            console.warn('Attribute size mismatch, skipping update');
+            return;
+        }
+        
         // Copy and clamp current colors to ensure they're in valid range
         const oldColors = new Float32Array(trackData.length * 3);
         const oldAlphas = new Float32Array(trackData.length);
         for (let i = 0; i < trackData.length; i++) {
-            oldColors[i * 3] = Math.max(0, Math.min(1, colorAttribute.array[i * 3]));
-            oldColors[i * 3 + 1] = Math.max(0, Math.min(1, colorAttribute.array[i * 3 + 1]));
-            oldColors[i * 3 + 2] = Math.max(0, Math.min(1, colorAttribute.array[i * 3 + 2]));
-            oldAlphas[i] = Math.max(0, Math.min(1, alphaAttribute.array[i]));
+            const r = colorAttribute.array[i * 3];
+            const g = colorAttribute.array[i * 3 + 1];
+            const b = colorAttribute.array[i * 3 + 2];
+            const a = alphaAttribute.array[i];
+            
+            // Check for invalid values and use safe defaults
+            oldColors[i * 3] = (isNaN(r) || r === undefined) ? 0.5 : Math.max(0, Math.min(1, r));
+            oldColors[i * 3 + 1] = (isNaN(g) || g === undefined) ? 0.5 : Math.max(0, Math.min(1, g));
+            oldColors[i * 3 + 2] = (isNaN(b) || b === undefined) ? 0.5 : Math.max(0, Math.min(1, b));
+            oldAlphas[i] = (isNaN(a) || a === undefined) ? 0.7 : Math.max(0, Math.min(1, a));
         }
         
         const newColors = new Float32Array(trackData.length * 3);
@@ -135,13 +157,14 @@ export class ColorManager {
             });
         }
         
-        if (animate) {
+        if (animate && this.isReady) {
             this.animateColorTransition(oldColors, newColors, oldAlphas, newAlphas);
         } else {
             this.sceneManager.updatePointColors(newColors, newAlphas);
         }
         
         this.currentColorFeature = feature;
+        this.isReady = true;
         
         // Update legend display
         if (feature === 'none') {
@@ -163,15 +186,30 @@ export class ColorManager {
             cancelAnimationFrame(this.animationFrameId);
         }
         
-        const startTime = performance.now();
         const geometry = this.sceneManager.getGeometry();
+        if (!geometry) return;
+        
         const colorAttribute = geometry.getAttribute('color');
         const alphaAttribute = geometry.getAttribute('alpha');
+        
+        // Validate attributes before starting animation
+        if (!colorAttribute || !alphaAttribute) {
+            console.warn('Attributes not ready for animation');
+            return;
+        }
+        
         const trackData = this.dataManager.getTrackData();
+        let startTime = null;
+        let frameCount = 0;
         
         const updateFrame = (currentTime) => {
+            // Initialize startTime on first frame
+            if (startTime === null) {
+                startTime = currentTime;
+            }
+            
             const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
+            const progress = Math.max(0, Math.min(elapsed / duration, 1));
             
             // Cubic easing
             const easedProgress = progress < 0.5 
@@ -214,10 +252,21 @@ export class ColorManager {
             const start = scale.start;
             const end = scale.end;
             
+            // Ensure value is valid and clamped
+            let clampedValue = value;
+            if (isNaN(clampedValue) || clampedValue === null || clampedValue === undefined) {
+                clampedValue = 0;
+            }
+            clampedValue = Math.max(0, Math.min(1, clampedValue));
+            
+            const r = start[0] + (end[0] - start[0]) * clampedValue;
+            const g = start[1] + (end[1] - start[1]) * clampedValue;
+            const b = start[2] + (end[2] - start[2]) * clampedValue;
+            
             return [
-                start[0] + (end[0] - start[0]) * value,
-                start[1] + (end[1] - start[1]) * value,
-                start[2] + (end[2] - start[2]) * value
+                Math.max(0, Math.min(1, isNaN(r) ? 0.5 : r)),
+                Math.max(0, Math.min(1, isNaN(g) ? 0.5 : g)),
+                Math.max(0, Math.min(1, isNaN(b) ? 0.5 : b))
             ];
         }
         
@@ -232,7 +281,13 @@ export class ColorManager {
         const min = Math.min(...values);
         const max = Math.max(...values);
         const range = max - min;
-        return values.map(v => range === 0 ? 0 : (v - min) / range);
+        
+        return values.map(v => {
+            if (v === null || v === undefined || isNaN(v)) return 0;
+            if (range === 0) return 0;
+            const normalized = (v - min) / range;
+            return Math.max(0, Math.min(1, normalized));
+        });
     }
     
     /**

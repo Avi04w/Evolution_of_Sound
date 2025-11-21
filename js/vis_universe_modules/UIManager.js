@@ -63,72 +63,58 @@ export class UIManager {
     }
     
     /**
-     * Setup genre filter with autocomplete
+     * Setup genre filter dropdown
      */
     setupGenreFilter() {
-        const genreInput = document.getElementById('genre-filter');
-        const genreSuggestions = document.getElementById('genre-suggestions');
+        const genreDropdown = document.getElementById('genre-filter');
         const clearButton = document.getElementById('clear-genre');
         
-        if (!genreInput || !genreSuggestions) return;
+        if (!genreDropdown) return;
         
         const allGenres = this.dataManager.getAllGenres();
         
-        genreInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
+        // Populate dropdown with all supergenres
+        allGenres.forEach(g => {
+            const option = document.createElement('option');
+            option.value = g.genre;
+            option.textContent = `${g.genre} (${g.count})`;
+            genreDropdown.appendChild(option);
+        });
+        
+        // Handle dropdown change
+        genreDropdown.addEventListener('change', (e) => {
+            const genre = e.target.value;
             
-            if (searchTerm.length === 0) {
-                genreSuggestions.style.display = 'none';
-                return;
-            }
-            
-            // Filter genres (already sorted by count)
-            const matches = allGenres.filter(g => 
-                g.genre.toLowerCase().includes(searchTerm)
-            ).slice(0, 20); // Limit to 20 results
-            
-            if (matches.length > 0) {
-                genreSuggestions.innerHTML = matches.map(g => 
-                    `<div class="genre-option" data-genre="${g.genre}">
-                        <span>${g.genre}</span>
-                        <span class="genre-count">${g.count}</span>
-                    </div>`
-                ).join('');
-                genreSuggestions.style.display = 'block';
+            if (genre) {
+                // Clear billboard if callback provided
+                if (this.onClearBillboardCallback) {
+                    this.onClearBillboardCallback();
+                }
                 
-                // Add click handlers to suggestions
-                genreSuggestions.querySelectorAll('.genre-option').forEach(option => {
-                    option.addEventListener('click', () => {
-                        const genre = option.getAttribute('data-genre');
-                        
-                        // Clear billboard if callback provided
-                        if (this.onClearBillboardCallback) {
-                            this.onClearBillboardCallback();
-                        }
-                        
-                        // Apply genre filter
-                        if (this.onGenreFilterCallback) {
-                            this.onGenreFilterCallback(genre);
-                        }
-                        
-                        genreInput.value = genre;
-                        genreSuggestions.style.display = 'none';
-                        
-                        if (clearButton) {
-                            clearButton.classList.remove('hidden');
-                        }
-                    });
-                });
+                // Apply genre filter
+                if (this.onGenreFilterCallback) {
+                    this.onGenreFilterCallback(genre);
+                }
+                
+                if (clearButton) {
+                    clearButton.classList.remove('hidden');
+                }
             } else {
-                genreSuggestions.innerHTML = '<div class="genre-no-matches">No matches found</div>';
-                genreSuggestions.style.display = 'block';
+                // "All Genres" selected - clear filter
+                if (this.onClearGenreCallback) {
+                    this.onClearGenreCallback();
+                }
+                
+                if (clearButton) {
+                    clearButton.classList.add('hidden');
+                }
             }
         });
         
         // Clear filter button
         if (clearButton) {
             clearButton.addEventListener('click', () => {
-                genreInput.value = '';
+                genreDropdown.value = '';
                 clearButton.classList.add('hidden');
                 
                 if (this.onClearGenreCallback) {
@@ -136,13 +122,6 @@ export class UIManager {
                 }
             });
         }
-        
-        // Hide suggestions when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!genreInput.contains(e.target) && !genreSuggestions.contains(e.target)) {
-                genreSuggestions.style.display = 'none';
-            }
-        });
     }
     
     /**

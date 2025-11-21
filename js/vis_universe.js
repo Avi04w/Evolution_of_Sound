@@ -156,10 +156,7 @@ class MusicUniverseVisualization {
             // Create timeline UI
             this.createTimeline();
             
-            // Set initial colors
-            this.colorManager.updateColors('none', false);
-            
-            // Start animation
+            // Start animation first to ensure rendering is active
             this.sceneManager.startAnimation();
             
             // Initialize UIManager
@@ -196,9 +193,29 @@ class MusicUniverseVisualization {
             window.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'set-feature') {
                     const feature = event.data.feature;
-                    this.updateColors(feature, true);
-                    // Update loading vector visibility to show only current feature
-                    this.updateLoadingVectorForFeature(feature);
+                    const initialFeature = this.sceneManager.getInitialFeature();
+                    
+                    // If this is the first color update
+                    if (!this.colorManager.isReady) {
+                        // Mark as ready immediately since we initialized with acousticness
+                        this.colorManager.isReady = true;
+                        this.colorManager.currentColorFeature = initialFeature;
+                        
+                        // If feature is different from initial, transition to it
+                        if (feature !== initialFeature) {
+                            setTimeout(() => {
+                                this.updateColors(feature, false); // No animation on initial transition
+                                this.updateLoadingVectorForFeature(feature);
+                            }, 100);
+                        } else {
+                            // Same as initial, just update legend and loading vectors
+                            this.colorManager.createLegend(feature);
+                            this.updateLoadingVectorForFeature(feature);
+                        }
+                    } else {
+                        this.updateColors(feature, true);
+                        this.updateLoadingVectorForFeature(feature);
+                    }
                     // Note: No local dropdown to update since feature is controlled by parent page
                 }
             });
