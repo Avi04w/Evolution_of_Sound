@@ -90,19 +90,40 @@ export class InteractionManager {
             this.hoveredPoint = null;
         });
 
-        // Add click listener to play song
-        renderer.domElement.addEventListener('click', () => {
-            // Use the same raycasting logic as mousemove to find the clicked point
-            if (this.hoveredPoint !== null) {
-                const trackData = this.dataManager.getTrackData()[this.hoveredPoint];
-                if (trackData && trackData.id) {
-                    // Post a message to the parent window to request playing the song.
-                    // This is necessary because this script runs in an iframe.
-                    window.parent.postMessage({
-                        type: 'play-spotify-track',
-                        trackId: trackData.id
-                    }, '*'); // In a real-world scenario, you'd restrict the target origin for security.
+        // Track mouse position on mousedown to detect drag vs click
+        let mouseDownPosition = null;
+        let mouseDownTime = null;
+        
+        renderer.domElement.addEventListener('pointerdown', (event) => {
+            mouseDownPosition = { x: event.clientX, y: event.clientY };
+            mouseDownTime = Date.now();
+        });
+        
+        renderer.domElement.addEventListener('pointerup', (event) => {
+            // Only play song if mouse hasn't moved much and it was a quick action
+            if (mouseDownPosition) {
+                const dx = event.clientX - mouseDownPosition.x;
+                const dy = event.clientY - mouseDownPosition.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const duration = Date.now() - mouseDownTime;
+                
+                // Consider it a click if moved less than 5 pixels and took less than 300ms
+                if (distance < 5 && duration < 300) {
+                    if (this.hoveredPoint !== null) {
+                        const trackData = this.dataManager.getTrackData()[this.hoveredPoint];
+                        if (trackData && trackData.id) {
+                            // Post a message to the parent window to request playing the song.
+                            // This is necessary because this script runs in an iframe.
+                            window.parent.postMessage({
+                                type: 'play-spotify-track',
+                                trackId: trackData.id
+                            }, '*'); // In a real-world scenario, you'd restrict the target origin for security.
+                        }
+                    }
                 }
+                
+                mouseDownPosition = null;
+                mouseDownTime = null;
             }
         });
     }
