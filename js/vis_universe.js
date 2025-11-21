@@ -159,6 +159,15 @@ class MusicUniverseVisualization {
             // Start animation first to ensure rendering is active
             this.sceneManager.startAnimation();
             
+            // Ensure scene is in proper state by explicitly setting to acousticness
+            setTimeout(() => {
+                if (this.colorManager) {
+                    this.currentColorFeature = 'acousticness';
+                    this.colorManager.updateColors('acousticness', false);
+                    console.log('Scene initialized with acousticness colors');
+                }
+            }, 100);
+            
             // Initialize UIManager
             this.uiManager = new UIManager(this.sceneManager, this.dataManager);
             this.uiManager.setCallbacks({
