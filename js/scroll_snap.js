@@ -8,7 +8,6 @@
         'conclusion-section',
         'era-section',
         'bubble-section',
-        'feature-selection-section',
         'record-player-container'
     ]);
 

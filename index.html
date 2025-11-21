@@ -98,7 +98,7 @@
 
             <h3 class="feature-section-title" style="margin-bottom: 0;">Musical Features</h3>
             <p class="feature-section-subtitle" style="margin: 10px 0;">
-                Each feature captures a different aspect of a song’s composition and feel.
+                Each feature captures a different aspect of a song’s composition and feel. Change the selected feature at the top left of the page.
             </p>
 
             <!-- Feature selector and detailed description -->
@@ -220,11 +220,13 @@
     function updateFeatureDescription(selected) {
         const descEl = document.getElementById('feature-description');
         if (!descEl) return;
+        const sel = selected || window.feature || 'acousticness';
         let html = '<div class="feature-list"><dl>';
         featureOrder.forEach((key) => {
             const title = key.charAt(0).toUpperCase() + key.slice(1);
             const body = featureDescriptions[key] || 'No description available.';
-            html += `<dt><strong>${title}: </strong>${body}</dt>`;
+            const cls = (key === sel) ? 'selected-feature' : '';
+            html += `<dt class="${cls}"><strong>${title}: </strong>${body}</dt>`;
         });
         html += '</dl></div>';
         descEl.innerHTML = html;
@@ -232,27 +234,21 @@
 
     // When the DOM is ready, wire up the selector and set the initial description.
     document.addEventListener('DOMContentLoaded', function() {
-        var select = document.getElementById('feature-select');
-        if (select) {
-            // Set default selection to match the default feature variable
-            select.value = feature;
-            select.addEventListener("change", (e) => {
+        const persistentSelect = document.getElementById('persistent-feature-select');
+        if (persistentSelect) {
+            // initialize persistent selector to current global feature
+            persistentSelect.value = window.feature || 'acousticness';
+            // when changed, delegate to existing setGlobalFeature (which also updates descriptions)
+            persistentSelect.addEventListener('change', (e) => {
                 setGlobalFeature(e.target.value);
+                // ensure description highlighting is immediately applied (setGlobalFeature calls updateFeatureDescription,
+                // but call again to be safe if overwritten elsewhere)
+                updateFeatureDescription(e.target.value);
             });
         }
-        const geoFrame = document.querySelector(GEO_EMBED_SELECTOR);
-        if (geoFrame) {
-            geoFrame.addEventListener("load", () => {
-                if (window.feature) {
-                    geoFrame.contentWindow?.postMessage(
-                        { type: "global-feature-change", feature: window.feature },
-                        "*"
-                    );
-                }
-            });
-        }
-        // populate initial description
-        updateFeatureDescription(feature);
+
+        // ensure initial rendered description highlights the default
+        updateFeatureDescription(window.feature || 'acousticness');
     });
 
     // Initialize the DNA visualization using the (now-defined) feature variable.

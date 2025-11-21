@@ -418,6 +418,7 @@ class VisDNA {
             const inverted = (d[0].y < d[1].y) ? 1 : -1;
             const color = d[0].color;
             const xPos = this.x(d[0].x);
+            const lift = 1 + this.focus[i] * 0.12;
 
             // focus factor for this bar (0..1)
             // (focus value is tracked elsewhere but not required for current drawing math)
@@ -426,7 +427,7 @@ class VisDNA {
             g.selectAll("circle")
                 .data(d)
                 .attr("cx", d => this.x(d.x))
-                .attr("cy", d => this.y(d.y))
+                .attr("cy", d => this.y(d.y) * lift)
                 // do NOT change radius based on focus — keep color scales visible
                 .attr("r", d => this.z(d.z))
                 .attr("fill", color)
@@ -435,8 +436,8 @@ class VisDNA {
 
             // Update connecting line (bar)
             // compute visible endpoints
-            const yTop = this.y(d[1].y) + inverted * this.z(d[1].z);
-            const yBottom = this.y(d[0].y) - inverted * this.z(d[0].z);
+            const yTop = (this.y(d[1].y) + inverted * this.z(d[1].z)) * lift;
+            const yBottom = (this.y(d[0].y) - inverted * this.z(d[0].z)) * lift;
 
             g.select("line")
                 .attr("x1", xPos)

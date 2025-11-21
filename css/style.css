@@ -393,3 +393,16 @@ html, body { height: 100%; margin: 0; }
 .dna-description2 {
     margin: 0 10% 10px 10%;
 }
+
+.feature-list dt {
+    transition: background-color 0.18s ease, transform 0.18s ease;
+    padding: 6px 8px;
+    border-radius: 4px;
+}
+.feature-list dt.selected-feature {
+    background: rgba(255, 202, 40, 0.12); /* subtle yellow */
+    border-left: 4px solid #ffca28;
+    transform: translateX(4px);
+    font-weight: 600;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
