@@ -185,7 +185,7 @@ class FeatureTimeline {
         this.svg.append("text")
             .attr("class", "axis-label")
             .attr("x", -(this.height / 2))
-            .attr("y", this.margin.left - 50)
+            .attr("y", this.margin.left - 40)
             .attr("transform", "rotate(-90)")
             .attr("text-anchor", "middle")
             .attr("font-size", 16)
