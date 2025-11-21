@@ -485,9 +485,18 @@ export class ColorManager {
      * Kept for backwards compatibility
      */
     repositionRightLegends() {
-        // Color legend is now fixed at top: 20px
-        // Loading vector legend is fixed at bottom: 20px via CSS
-        // No dynamic repositioning needed
+        // Position loading vector legend below the color legend
+        const colorLegend = document.getElementById('color-legend');
+        const loadingLegend = document.getElementById('loading-vector-legend');
+        
+        if (colorLegend && loadingLegend) {
+            const colorLegendRect = colorLegend.getBoundingClientRect();
+            const containerRect = document.getElementById(this.containerId).getBoundingClientRect();
+            
+            // Calculate position: color legend bottom + gap (10px)
+            const topPosition = (colorLegendRect.bottom - containerRect.top) + 10;
+            loadingLegend.style.top = `${topPosition}px`;
+        }
     }
     
     // Getters

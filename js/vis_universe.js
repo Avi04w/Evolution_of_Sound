@@ -113,6 +113,9 @@ class MusicUniverseVisualization {
             // Initialize ColorManager
             this.colorManager = new ColorManager(this.containerId, this.sceneManager, this.dataManager);
             
+            // Pass colorManager to SceneManager for legend positioning
+            this.sceneManager.setColorManager(this.colorManager);
+            
             // Initialize BillboardController
             this.billboardController = new BillboardController(this.dataManager, this.colorManager);
             this.billboardController.setUpdateCallback((state) => {

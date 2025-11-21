@@ -22,6 +22,9 @@ export class SceneManager {
         this.loadingArrows = [];
         this.loadingVectorLegend = null;
         
+        // Reference to ColorManager for legend positioning
+        this.colorManager = null;
+        
         // Dimensions
         this.width = 0;
         this.height = 0;
@@ -342,6 +345,13 @@ export class SceneManager {
             onToggle(visible);
         }
         
+        // Reposition loading legend below color legend when shown
+        if (visible && this.colorManager) {
+            setTimeout(() => {
+                this.colorManager.repositionRightLegends();
+            }, 10); // Small delay to ensure display change has taken effect
+        }
+        
         console.log(`Loading arrows ${visible ? 'shown' : 'hidden'}`);
         return visible;
     }
@@ -429,6 +439,11 @@ export class SceneManager {
         
         alphaAttribute.array.set(alphas);
         alphaAttribute.needsUpdate = true;
+    }
+    
+    // Setters
+    setColorManager(colorManager) {
+        this.colorManager = colorManager;
     }
     
     // Getters
