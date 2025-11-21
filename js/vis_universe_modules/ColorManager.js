@@ -308,13 +308,23 @@ export class ColorManager {
         const trackData = this.dataManager.getTrackData();
         const featureValues = trackData.map(d => d[feature] || 0);
         
-        let min, max;
-        if (feature === 'loudness' || feature === 'key') {
+        let min, max, formatValue;
+        if (feature === 'loudness') {
             min = Math.min(...featureValues);
             max = Math.max(...featureValues);
+            formatValue = d => d.toFixed(1) + ' dB';
+        } else if (feature === 'tempo') {
+            min = Math.min(...featureValues);
+            max = Math.max(...featureValues);
+            formatValue = d => d.toFixed(0) + ' BPM';
+        } else if (feature === 'key') {
+            min = Math.min(...featureValues);
+            max = Math.max(...featureValues);
+            formatValue = d => d.toFixed(1);
         } else {
             min = 0;
             max = 1;
+            formatValue = d => d.toFixed(2);
         }
         
         const container = d3.select(`#${this.containerId}`);
@@ -429,7 +439,7 @@ export class ColorManager {
         
         const axis = d3.axisRight(scale)
             .ticks(5)
-            .tickFormat(d => d.toFixed(2));
+            .tickFormat(formatValue);
         
         const transition = animate ? axisGroup.transition().duration(500).ease(d3.easeCubicInOut) : axisGroup;
         transition.call(axis);
