@@ -22,6 +22,7 @@ body {
   padding: 1.25rem 1.75rem;
   background: #12131a;
   color: #f3f4f9;
+  text-align: center;
 }
 
 .app-header h1 {
@@ -31,7 +32,7 @@ body {
 }
 
 .app-header p {
-  margin: 0.35rem 0 0;
+  margin: 0.35rem auto;
   max-width: 720px;
   color: #d5d7e3;
   font-size: 0.95rem;
@@ -91,6 +92,15 @@ main {
   align-items: flex-start;
   gap: 0.4rem;
 }
+/* 
+.map-header {
+  justify-content: center;
+}
+
+.map-title {
+  flex: 1 1 100%;
+  text-align: center;
+} */
 
 .map-controls {
   display: flex;
@@ -178,8 +188,16 @@ main {
   display: flex;
   align-items: center;
   gap: 0.55rem;
+  flex-wrap: wrap;
   font-size: 0.85rem;
   color: #383b4a;
+}
+
+.legend-gradient {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
 }
 
 .legend-swatches {
@@ -193,6 +211,18 @@ main {
   height: 12px;
   border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-swatch--no-data {
+  background: #d8dce9;
+}
+
+.legend-no-data {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: #5a5d70;
 }
 
 .pin-legend {

@@ -5,6 +5,7 @@ import {
 import {
   DEFAULT_FEATURE_KEY,
   FEATURE_COLOR_MAP,
+  FEATURE_GRADIENT_MAP,
 } from "./config.js";
 
 const d3 = window.d3;
@@ -16,8 +17,11 @@ const END_DATE = new Date("2020-12-31T23:59:59Z");
 const BASELINE_END = new Date("1989-12-31T23:59:59Z");
 const DEFAULT_WINDOW = 52;
 const DEFAULT_TOP_N = 8;
-const DEFAULT_PLAYBACK_SPEED = 200;
+const PLAYBACK_INTERVAL_MS = 200;
+const DEFAULT_TICK_INTERVAL_WEEKS = 26;
+const VALID_TICK_INTERVALS = new Set([1, 4, 26, 52]);
 const ENABLE_FEATURE_HOTSPOTS = false;
+const NO_DATA_FILL = "#d8dce9";
 
 const FEATURE_OPTIONS = [
   {
@@ -26,6 +30,7 @@ const FEATURE_OPTIONS = [
     domain: [0, 1],
     formatter: (value) => formatNumber(value, 2),
     color: FEATURE_COLOR_MAP.acousticness,
+    gradient: getFeatureGradient("acousticness"),
   },
   {
     key: "danceability",
@@ -33,6 +38,7 @@ const FEATURE_OPTIONS = [
     domain: [0, 1],
     formatter: (value) => formatNumber(value, 2),
     color: FEATURE_COLOR_MAP.danceability,
+    gradient: getFeatureGradient("danceability"),
   },
   {
     key: "energy",
@@ -40,6 +46,7 @@ const FEATURE_OPTIONS = [
     domain: [0, 1],
     formatter: (value) => formatNumber(value, 2),
     color: FEATURE_COLOR_MAP.energy,
+    gradient: getFeatureGradient("energy"),
   },
   {
     key: "loudness",
@@ -48,6 +55,7 @@ const FEATURE_OPTIONS = [
     formatter: (value) =>
       Number.isFinite(value) ? `${formatNumber(value, 1)} dB` : "—",
     color: FEATURE_COLOR_MAP.loudness,
+    gradient: getFeatureGradient("loudness"),
   },
   {
     key: "valence",
@@ -55,6 +63,7 @@ const FEATURE_OPTIONS = [
     domain: [0, 1],
     formatter: (value) => formatNumber(value, 2),
     color: FEATURE_COLOR_MAP.valence,
+    gradient: getFeatureGradient("valence"),
   },
   {
     key: "instrumentalness",
@@ -62,6 +71,7 @@ const FEATURE_OPTIONS = [
     domain: [0, 1],
     formatter: (value) => formatNumber(value, 3),
     color: FEATURE_COLOR_MAP.instrumentalness,
+    gradient: getFeatureGradient("instrumentalness"),
   },
   {
     key: "speechiness",
@@ -69,6 +79,7 @@ const FEATURE_OPTIONS = [
     domain: [0, 1],
     formatter: (value) => formatNumber(value, 2),
     color: FEATURE_COLOR_MAP.speechiness,
+    gradient: getFeatureGradient("speechiness"),
   },
   {
     key: "liveness",
@@ -76,6 +87,7 @@ const FEATURE_OPTIONS = [
     domain: [0, 1],
     formatter: (value) => formatNumber(value, 2),
     color: FEATURE_COLOR_MAP.liveness,
+    gradient: getFeatureGradient("liveness"),
   },
   {
     key: "tempo",
@@ -84,6 +96,7 @@ const FEATURE_OPTIONS = [
     formatter: (value) =>
       Number.isFinite(value) ? `${Math.round(value)} BPM` : "—",
     color: FEATURE_COLOR_MAP.tempo,
+    gradient: getFeatureGradient("tempo"),
   },
 ];
 
@@ -142,7 +155,7 @@ let timelineRangeEl = null;
 let timelineLabelEl = null;
 let timelineIndexEl = null;
 let playPauseButtonEl = null;
-let playbackSpeedSelectEl = null;
+let tickIntervalSelectEl = null;
 
 let mapSummaryEl = null;
 let mapLegendEl = null;
@@ -208,7 +221,7 @@ const state = {
   normalizeTracks: false,
   currentWeekIndex: 0,
   isPlaying: false,
-  playSpeedMs: DEFAULT_PLAYBACK_SPEED,
+  tickIntervalWeeks: DEFAULT_TICK_INTERVAL_WEEKS,
   playTimer: null,
   isScrubbing: false,
 };
@@ -258,7 +271,7 @@ function cacheDomReferences() {
   );
   dom.weekRange = document.querySelector("[data-role=week-range]");
   dom.playButton = document.querySelector("[data-role=play-pause]");
-  playbackSpeedSelectEl = document.querySelector("[data-role=playback-speed]");
+  tickIntervalSelectEl = document.querySelector("[data-role=tick-interval]");
   timelineRangeEl = dom.weekRange;
   timelineLabelEl = document.querySelector("[data-role=week-label]");
   timelineIndexEl = document.querySelector("[data-role=week-index]");
@@ -284,7 +297,9 @@ function cacheDomReferences() {
     "[data-stat=activeCountries]"
   );
   statElements.topExporter = document.querySelector("[data-stat=topExporter]");
-  statElements.fastestMover = document.querySelector("[data-stat=fastestMover]");
+  statElements.fastestMover = document.querySelector(
+    "[data-stat=fastestMover]"
+  );
 
   sparklineDefs.forEach((def) => {
     const el = document.querySelector(`[data-sparkline-value=${def.key}]`);
@@ -366,10 +381,11 @@ function attachControlHandlers() {
     dom.playButton.addEventListener("click", () => togglePlayback());
   }
 
-  if (playbackSpeedSelectEl) {
-    playbackSpeedSelectEl.addEventListener("change", (event) => {
-      const speed = Number(event.target.value) || DEFAULT_PLAYBACK_SPEED;
-      state.playSpeedMs = clampNumber(speed, 50, 2000);
+  if (tickIntervalSelectEl) {
+    tickIntervalSelectEl.addEventListener("change", (event) => {
+      const interval = normalizeTickInterval(event.target.value);
+      state.tickIntervalWeeks = interval;
+      updateTimelineStep();
       if (state.isPlaying) {
         restartPlaybackTimer();
       }
@@ -599,7 +615,7 @@ function initializeMap(worldTopo) {
     .data(worldGeo.features)
     .join("path")
     .attr("d", pathGenerator)
-    .attr("fill", "#f0f2f9")
+    .attr("fill", NO_DATA_FILL)
     .attr("stroke", "#fff")
     .attr("stroke-width", 0.5)
     .on("pointermove", (event, d) => handleMapPointer(event, d))
@@ -669,18 +685,23 @@ function configureTimeline() {
   const total = weeks.length;
   timelineRangeEl.min = 0;
   timelineRangeEl.max = total > 0 ? total - 1 : 0;
-  timelineRangeEl.step = 1;
   timelineRangeEl.value = String(state.currentWeekIndex);
   timelineRangeEl.disabled = total === 0;
+  updateTimelineStep();
 
   if (playPauseButtonEl) {
     playPauseButtonEl.disabled = total === 0;
     updatePlayButton();
   }
 
-  if (playbackSpeedSelectEl) {
-    playbackSpeedSelectEl.value = String(state.playSpeedMs);
+  if (tickIntervalSelectEl) {
+    tickIntervalSelectEl.value = String(state.tickIntervalWeeks);
   }
+}
+
+function updateTimelineStep() {
+  if (!timelineRangeEl) return;
+  timelineRangeEl.step = state.tickIntervalWeeks;
 }
 
 function updateMapSummary() {
@@ -893,7 +914,7 @@ function updateMap(weekIdx) {
   if (weekIdx === null || weekIdx === undefined || !weeks.length) {
     latestAggregation = null;
     if (choroplethSelection) {
-      choroplethSelection.attr("fill", "#f0f2f9");
+      choroplethSelection.attr("fill", NO_DATA_FILL);
     }
     updateLegend(null);
     updateStatPanel(null);
@@ -931,7 +952,7 @@ function updateMap(weekIdx) {
 
   if (!mapValues.size) {
     if (choroplethSelection) {
-      choroplethSelection.attr("fill", "#f0f2f9");
+      choroplethSelection.attr("fill", NO_DATA_FILL);
     }
     updateLegend(null);
     updateStatPanel(latestAggregation);
@@ -951,7 +972,7 @@ function updateMap(weekIdx) {
   });
 
   if (choroplethSelection) {
-    choroplethSelection.attr("fill", (d) => fillValues.get(d.id) ?? "#f0f2f9");
+    choroplethSelection.attr("fill", (d) => fillValues.get(d.id) ?? NO_DATA_FILL);
   }
 
   updateLegend(colorizer);
@@ -964,25 +985,25 @@ function updateMap(weekIdx) {
 function buildColorScale(mapValues) {
   const option = FEATURE_LOOKUP.get(state.selectedFeatureKey);
   const values = Array.from(mapValues.values());
-
-  const featureColor = option?.color ?? "#556bce";
+  const gradient = option?.gradient ?? getFeatureGradient(option?.key);
+  const [gradientLow, gradientHigh] = gradient ?? ["#dbeafe", "#1d4e00"];
 
   if (state.mapMode === "absolute") {
     const baseDomain = option?.domain ?? [0, 1];
-    const [minValue, maxValue] = baseDomain;
+    const [minValue, maxValue] = deriveSequentialDomain(values, baseDomain);
     const scale = d3
       .scaleSequential()
       .domain([minValue, maxValue])
       .clamp(true)
       .interpolator((t) => {
         const eased = Math.max(0, Math.min(1, t));
-        return d3.interpolateRgb("#f7fafd", featureColor)(eased);
+        return d3.interpolateLab(gradientLow, gradientHigh)(eased);
       });
     return {
       type: "single",
       domain: [minValue, (minValue + maxValue) / 2, maxValue],
       scale,
-      featureColor,
+      featureColor: gradientHigh,
     };
   }
 
@@ -993,18 +1014,23 @@ function buildColorScale(mapValues) {
     : 0;
   const domainMax = maxAbs > 0 ? maxAbs : fallback;
 
-  const positiveColor = featureColor;
-  const negativeColor = d3.color(featureColor)?.darker(1.7)?.formatHex() ?? "#2b4c7f";
+  const positiveColor = gradientHigh;
+  const negativeColor = gradientLow;
+  const neutralColor = mixColors(gradientLow, gradientHigh, 0.5);
 
   const scale = d3
     .scaleDiverging([-domainMax, 0, domainMax])
     .interpolator((value) => {
       if (value <= 0) {
-        return d3.interpolateRgb("#f8f9fb", negativeColor)(
-          Math.abs(value) / domainMax
-        );
+        return d3.interpolateLab(
+          neutralColor,
+          negativeColor
+        )(Math.abs(value) / domainMax);
       }
-      return d3.interpolateRgb("#f8f9fb", positiveColor)(value / domainMax);
+      return d3.interpolateLab(
+        neutralColor,
+        positiveColor
+      )(value / domainMax);
     })
     .clamp(true);
   return {
@@ -1047,9 +1073,24 @@ function updateLegend(config) {
   const maxLabel = document.createElement("span");
   maxLabel.textContent = labelFormatter(maxValue);
 
-  mapLegendEl.appendChild(minLabel);
-  mapLegendEl.appendChild(swatchContainer);
-  mapLegendEl.appendChild(maxLabel);
+  const gradientRow = document.createElement("div");
+  gradientRow.className = "legend-gradient";
+  gradientRow.appendChild(minLabel);
+  gradientRow.appendChild(swatchContainer);
+  gradientRow.appendChild(maxLabel);
+
+  const noDataLegend = document.createElement("div");
+  noDataLegend.className = "legend-no-data";
+  const noDataSwatch = document.createElement("span");
+  noDataSwatch.className = "legend-swatch legend-swatch--no-data";
+  noDataSwatch.style.background = NO_DATA_FILL;
+  const noDataLabel = document.createElement("span");
+  noDataLabel.textContent = "No data";
+  noDataLegend.appendChild(noDataSwatch);
+  noDataLegend.appendChild(noDataLabel);
+
+  mapLegendEl.appendChild(gradientRow);
+  mapLegendEl.appendChild(noDataLegend);
 
   const additionalText =
     state.mapMode === "absolute"
@@ -1182,7 +1223,10 @@ function initializeSparklines() {
       chartRect && chartRect.height && Number.isFinite(chartRect.height)
         ? chartRect.height
         : Number(svg.attr("height")) || 64;
-    svg.attr("width", width).attr("height", height).attr("viewBox", `0 0 ${width} ${height}`);
+    svg
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", `0 0 ${width} ${height}`);
     const margin = { top: 4, right: 8, bottom: 4, left: 8 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
@@ -1447,8 +1491,8 @@ function startPlaybackTimer() {
       pause();
       return;
     }
-    setWeekIndex(state.currentWeekIndex + 1);
-  }, state.playSpeedMs);
+    setWeekIndex(state.currentWeekIndex + state.tickIntervalWeeks);
+  }, PLAYBACK_INTERVAL_MS);
 }
 
 function stopPlaybackTimer() {
@@ -1500,6 +1544,66 @@ function normalizeName(value) {
 function formatCountryName(iso) {
   if (!iso) return "Unknown";
   return isoNameOverrides[iso] ?? displayNames.of(iso) ?? iso;
+}
+
+function getFeatureGradient(featureKey) {
+  if (!featureKey) {
+    return ["#f0f2ff", "#1c2d5a"];
+  }
+  const gradient = FEATURE_GRADIENT_MAP?.[featureKey];
+  if (Array.isArray(gradient) && gradient.length === 2) {
+    return gradient;
+  }
+  const fallback = FEATURE_COLOR_MAP?.[featureKey] ?? "#556bce";
+  const base = d3.color(fallback) ?? d3.color("#556bce");
+  const baseHex = base.formatHex();
+  const lighter = d3.interpolateLab("#f7f7fb", baseHex)(0.5);
+  const darker = base.darker(1).formatHex();
+  return [lighter, darker];
+}
+
+function mixColors(colorA, colorB, t = 0.5) {
+  const interpolator = d3.interpolateLab(colorA ?? "#ffffff", colorB ?? "#000000");
+  return interpolator(Math.min(1, Math.max(0, t)));
+}
+
+function deriveSequentialDomain(values, baseDomain) {
+  if (!Array.isArray(baseDomain) || baseDomain.length < 2) {
+    return [0, 1];
+  }
+  const [baseMin, baseMax] = baseDomain;
+  if (!values.length) {
+    return baseDomain.slice();
+  }
+  const finiteValues = values.filter((value) => Number.isFinite(value));
+  if (!finiteValues.length) {
+    return baseDomain.slice();
+  }
+  let minValue = Math.min(...finiteValues);
+  let maxValue = Math.max(...finiteValues);
+  const baseSpan = Math.max(0.001, baseMax - baseMin || 1);
+  minValue = clampNumber(minValue, baseMin, baseMax);
+  maxValue = clampNumber(maxValue, baseMin, baseMax);
+  if (minValue === maxValue) {
+    const padding = baseSpan * 0.05;
+    minValue = clampNumber(minValue - padding, baseMin, baseMax);
+    maxValue = clampNumber(maxValue + padding, baseMin, baseMax);
+  }
+  const minSpan = Math.max(baseSpan * 0.12, 0.05);
+  if (maxValue - minValue < minSpan) {
+    const mid = (minValue + maxValue) / 2 || baseMin;
+    minValue = clampNumber(mid - minSpan / 2, baseMin, baseMax);
+    maxValue = clampNumber(mid + minSpan / 2, baseMin, baseMax);
+  }
+  return [minValue, maxValue];
+}
+
+function normalizeTickInterval(value) {
+  const numeric = Math.round(Number(value));
+  if (VALID_TICK_INTERVALS.has(numeric)) {
+    return numeric;
+  }
+  return DEFAULT_TICK_INTERVAL_WEEKS;
 }
 
 function formatDelta(value) {

@@ -12,6 +12,18 @@ const FEATURE_COLOR_MAP = Object.freeze({
   tempo: "#6c757d",
 });
 
+const FEATURE_GRADIENT_MAP = Object.freeze({
+  acousticness: ["#e4f1ff", "#00324e"],
+  danceability: ["#e8dcff", "#1e0059"],
+  energy: ["#bcffc4", "#1d4e00"],
+  loudness: ["#9e9e9e", "#000000"],
+  valence: ["#005283", "#ded700"],
+  instrumentalness: ["#ffe6f2", "#8a0045"],
+  speechiness: ["#ffe9b6", "#6a4c00"],
+  liveness: ["#d7fbff", "#005e66"],
+  tempo: ["#ffc8c8", "#770000"],
+});
+
 const SUPERGENRE_ORDER = Object.freeze([
   "Pop",
   "Hip-Hop/Rap",
@@ -124,6 +136,7 @@ function toSuperGenre(genre) {
 const GlobalVizConfig = {
   DEFAULT_FEATURE_KEY,
   FEATURE_COLOR_MAP,
+  FEATURE_GRADIENT_MAP,
   SUPERGENRE_ORDER,
   SUPERGENRE_COLORS,
   toSuperGenre,
@@ -136,6 +149,7 @@ if (typeof globalThis !== "undefined") {
 export {
   DEFAULT_FEATURE_KEY,
   FEATURE_COLOR_MAP,
+  FEATURE_GRADIENT_MAP,
   SUPERGENRE_COLORS,
   SUPERGENRE_ORDER,
   GlobalVizConfig,
