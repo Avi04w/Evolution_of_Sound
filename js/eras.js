@@ -46,12 +46,24 @@
             label: "2005",
             title: "electro swagger + pop punk",
             subtitle: "club-ready synths share space with arena guitars.",
+        },
+        {
+            id: "era-2010",
+            label: "2010",
+            title: "edm crescendos + trap drops",
+            subtitle: "super-saw synths and booming 808s dominate playlists.",
+        },
+        {
+            id: "era-2015",
+            label: "2015",
+            title: "streaming pop + alt-r&b haze",
+            subtitle: "minimal beats and moody hooks rule the feeds.",
         }
     ];
 
     const ALL_GENRE_KEY = "__all";
     const ERA_BUCKET_START = 1980;
-    const ERA_BUCKET_END = 2010;
+    const ERA_BUCKET_END = 2020;
     const ERA_BUCKET_SIZE = 5;
 
     function assignEraRanges() {
@@ -87,67 +99,14 @@
     assignEraRanges();
 
     const terminalTick = {
-        id: "era-terminal-2010",
-        label: "2010",
-        rangeLabel: "2010",
+        id: "era-terminal-2020",
+        label: "2020",
+        rangeLabel: "2020",
         isTerminal: true
     };
     const navTicks = eras.concat([terminalTick]);
 
-    // -------- fake genre counts for each decade (top 5) --------
-    // swap these for your real numbers later
-
-    const ERA_GENRE_COUNTS = {
-        "1980": [
-            { genre: "synth-pop", count: 120 },
-            { genre: "disco", count: 110 },
-            { genre: "arena rock", count: 90 },
-            { genre: "new wave", count: 70 },
-            { genre: "power ballad", count: 50 }
-        ],
-        "1985": [
-            { genre: "new wave", count: 130 },
-            { genre: "electro-pop", count: 115 },
-            { genre: "hair metal", count: 90 },
-            { genre: "freestyle", count: 75 },
-            { genre: "soft rock", count: 60 }
-        ],
-        "1990": [
-            { genre: "grunge", count: 140 },
-            { genre: "alt rock", count: 120 },
-            { genre: "r&b", count: 100 },
-            { genre: "rap", count: 95 },
-            { genre: "dance pop", count: 75 }
-        ],
-        "1995": [
-            { genre: "neo soul", count: 135 },
-            { genre: "r&b", count: 120 },
-            { genre: "trip-hop", count: 80 },
-            { genre: "britpop", count: 70 },
-            { genre: "pop rock", count: 65 }
-        ],
-        "2000": [
-            { genre: "pop", count: 150 },
-            { genre: "teen pop", count: 130 },
-            { genre: "hip-hop", count: 110 },
-            { genre: "trance", count: 95 },
-            { genre: "r&b", count: 85 }
-        ],
-        "2005": [
-            { genre: "electro pop", count: 145 },
-            { genre: "crunk", count: 110 },
-            { genre: "indie rock", count: 95 },
-            { genre: "pop punk", count: 90 },
-            { genre: "dance pop", count: 80 }
-        ],
-        "2010": [
-            { genre: "edm", count: 155 },
-            { genre: "trap", count: 135 },
-            { genre: "pop", count: 120 },
-            { genre: "dubstep", count: 95 },
-            { genre: "indie", count: 85 }
-        ]
-    };
+    // const ERA_GENRE_COUNTS = { /* removed fake counts */ };
 
     const FEATURE_KEYS = [
         "acousticness",
@@ -289,52 +248,407 @@
     const genreCanonicalCache = new Map();
     let canonicalGenreTokens = [];
     let canonicalGenreTokenSet = new Set();
-    const canonicalTokenOverrides = new Map([
-        ["hip", "hip-hop"],
-        ["hop", "hip-hop"],
-        ["r", "r&b"],
-        ["b", "r&b"]
-    ]);
+    let updateGenreChart = null;
+    let chartSvg = null;
 
-    function tokenizeGenre(value) {
-        return (value || "")
-            .toLowerCase()
-            .split(/[^a-z0-9]+/)
-            .filter(Boolean);
+    const FEATURE_HIGHLIGHT_OVERRIDES = {
+        Rock: [
+            { title: "Low danceability", detail: "riff-first, less groove-led" },
+            { title: "High loudness", detail: "cranked amps and big drums" },
+            { title: "High energy", detail: "driving, intense arrangements" }
+        ],
+        "Rock/Metal": [
+            { title: "Low danceability", detail: "riff-first, less groove-led" },
+            { title: "High loudness", detail: "cranked amps and big drums" },
+            { title: "High energy", detail: "driving, intense arrangements" }
+        ],
+        "R&B": [
+            { title: "High danceability", detail: "built for smooth grooves" },
+            { title: "Low acousticness", detail: "polished, electric textures" },
+            { title: "High loudness", detail: "radio-ready punch" }
+        ],
+        "R&B/Soul/Funk": [
+            { title: "High danceability", detail: "built for smooth grooves" },
+            { title: "Low acousticness", detail: "polished, electric textures" },
+            { title: "High loudness", detail: "radio-ready punch" }
+        ],
+        "Electronic/Dance": [
+            { title: "Low acousticness", detail: "synth-forward, fewer unplugged textures" },
+            { title: "High valence", detail: "bright, euphoric moods" },
+            { title: "High danceability", detail: "club-ready bounce" }
+        ],
+        "Hip-Hop": [
+            { title: "High tempo", detail: "uptempo beats" },
+            { title: "High energy", detail: "driving percussion" },
+            { title: "Low valence", detail: "grittier, moodier tone" }
+        ],
+        Pop: [
+            { title: "High danceability", detail: "catchy, groove-friendly" },
+            { title: "High loudness", detail: "polished, loud masters" },
+            { title: "Low speechiness", detail: "sung hooks over spoken vocals" }
+        ],
+        Country: [
+            { title: "Low speechiness", detail: "sung storytelling over talky vocals" },
+            { title: "High tempo", detail: "uptempo twang and shuffle" },
+            { title: "High acousticness", detail: "unplugged warmth and strings" }
+        ],
+        "Country/Folk/Americana": [
+            { title: "Low speechiness", detail: "sung storytelling over talky vocals" },
+            { title: "High tempo", detail: "uptempo twang and shuffle" },
+            { title: "High acousticness", detail: "unplugged warmth and strings" }
+        ]
+    };
+
+    function interpretOverride(item) {
+        if (!item || !item.title) return { direction: null, label: item?.title || "" };
+        const m = item.title.match(/^\s*(high|low)\s+(.*)/i);
+        if (!m) return { direction: null, label: item.title };
+        const direction = m[1].toLowerCase();
+        const label = m[2].trim();
+        return { direction, label };
+    }
+
+    function renderUnknownGenreDebug(unknownCounts, missingCount = 0) {
+        const hasUnknown =
+            unknownCounts && unknownCounts.size && unknownCounts.size > 0;
+        const hasMissing = Number.isFinite(missingCount) && missingCount > 0;
+        if (!hasUnknown && !hasMissing) return;
+        const sorted = Array.from(unknownCounts.entries()).sort(
+            (a, b) => (b[1] || 0) - (a[1] || 0)
+        );
+        const host = document.createElement("section");
+        host.className = "genre-debug-banner";
+        host.style.margin = "24px auto";
+        host.style.maxWidth = "900px";
+        host.style.padding = "16px 18px";
+        host.style.border = "1px dashed #e11d48";
+        host.style.background = "#fff1f2";
+        host.style.color = "#9f1239";
+        host.style.fontFamily = "monospace";
+        host.style.borderRadius = "12px";
+        host.style.lineHeight = "1.4";
+        const title = document.createElement("div");
+        title.textContent = "Unknown supergenre mappings (raw genre : count)";
+        title.style.fontWeight = "700";
+        title.style.marginBottom = "8px";
+        host.appendChild(title);
+        if (hasMissing) {
+            const missing = document.createElement("div");
+            missing.textContent = `Rows with no genre provided: ${missingCount}`;
+            missing.style.marginBottom = "6px";
+            host.appendChild(missing);
+        }
+        if (hasUnknown) {
+            const pre = document.createElement("pre");
+            pre.style.whiteSpace = "pre-wrap";
+            pre.style.margin = 0;
+            pre.textContent = sorted
+                .map(([genre, count]) => `${genre || "—"} : ${count || 0}`)
+                .join("\n");
+            host.appendChild(pre);
+        }
+        const target =
+            document.querySelector(".era-layout") || document.body.firstChild;
+        if (target && target.parentNode) {
+            target.parentNode.insertBefore(host, target);
+        } else {
+            document.body.appendChild(host);
+        }
+    }
+
+    // ----- supergenre mapping shared with universe (js/vis_universe_modules/DataManager.js) -----
+    const SUPERGENRE_ORDER = [
+        // "Pop",
+        // "Hip-Hop/Rap",
+        // "Rock/Metal",
+        // "Electronic/Dance",
+        // "R&B/Soul/Funk",
+        // "Country/Folk/Americana",
+        // "Latin",
+        // "Reggae/Caribbean",
+        // "Jazz/Blues",
+        // "Other/Unknown"
+        "Pop",
+        "Hip-Hop",
+        "Rock",
+        "Electronic/Dance",
+        "R&B",
+        "Country",
+        "Latin",
+        "Reggae",
+        "Jazz",
+        "Other/Unknown"
+    ];
+
+    function toSuperGenre(genre) {
+        const s = (genre || "Unknown").toLowerCase();
+        const includesAny = list => list.some(token => s.includes(token));
+
+        // hip-hop and rap families
+        if (
+            includesAny([
+                "hip hop",
+                "hip-hop",
+                "rap",
+                "drill",
+                "trap",
+                "grime",
+                "crunk",
+                "boom bap",
+                "bounce",
+                "hyphy",
+                "baltimore club",
+                "horrorcore",
+                "shatta",
+                "azonto"
+            ])
+        ) {
+            // return "Hip-Hop/Rap";
+            return "Hip-Hop";
+        }
+
+        // rock + alt + metal
+        if (
+            includesAny([
+                "rock",
+                "metal",
+                "punk",
+                "grunge",
+                "emo",
+                "aor",
+                "post-grunge",
+                "psychobilly",
+                "jam band",
+                "riot grrrl",
+                "madchester",
+                "indie",
+                "shoegaze",
+                "slowcore",
+                "neo-psychedelic",
+                "post-hardcore",
+                "screamo"
+            ])
+        ) {
+            // return "Rock/Metal";
+            return "Rock";
+
+        }
+
+        // electronic / dance
+        if (
+            includesAny([
+                "edm",
+                "electro",
+                "house",
+                "trance",
+                "techno",
+                "dance",
+                "dubstep",
+                "euro",
+                "disco",
+                "post-disco",
+                "hi-nrg",
+                "new wave",
+                "freestyle",
+                "italo disco",
+                "big room",
+                "big beat",
+                "uk garage",
+                "industrial",
+                "darkwave",
+                "trip hop",
+                "synth",
+                "miami bass",
+                "new rave",
+                "footwork",
+                "downtempo",
+                "breakbeat",
+                "ballroom vogue",
+                "jersey club",
+                "moombahton",
+                "ambient",
+                "minimalism",
+                "cold wave",
+                "bass music",
+                "new age"
+            ])
+        ) {
+            return "Electronic/Dance";
+        }
+
+        // r&b / soul / funk
+        if (
+            includesAny([
+                "r&b",
+                "rnb",
+                "soul",
+                "motown",
+                "funk",
+                "quiet storm",
+                "doo-wop",
+                "northern soul",
+                "new jack swing",
+                "classic soul",
+                "gospel",
+                "go-go",
+                "boogie",
+                "afrobeat",
+                "afrobeats"
+            ])
+        ) {
+            // return "R&B/Soul/Funk";
+            return "R&B";
+
+        }
+
+        // country + folk
+        if (
+            includesAny([
+                "country",
+                "americana",
+                "bluegrass",
+                "folk",
+                "honky tonk",
+                "red dirt",
+                "singer-songwriter",
+                "celtic",
+                "newgrass",
+                "cajun",
+                "sea shanties",
+                "southern gothic",
+                "zydeco",
+                "native american music"
+            ])
+        ) {
+            // return "Country/Folk/Americana";
+            return "Country";
+        }
+
+        // latin
+        if (
+            includesAny([
+                "latin",
+                "reggaeton",
+                "bachata",
+                "merengue",
+                "cumbia",
+                "vallenato",
+                "español",
+                "espanol",
+                "mariachi",
+                "cha cha cha",
+                "villancicos",
+                "samba",
+                "bolero",
+                "tejano",
+                "dembow",
+                "música mexicana",
+                "musica mexicana",
+                "salsa",
+                "mambo",
+                "son cubano",
+                "ranchera",
+                "norteño",
+                "norteno",
+                "banda",
+                "grupera"
+            ])
+        ) {
+            return "Latin";
+        }
+
+        // reggae, dancehall, soca
+        if (
+            includesAny([
+                "reggae",
+                "dancehall",
+                "soca",
+                "calypso",
+                "ragga",
+                "riddim",
+                "ska"
+            ])
+        ) {
+            return "Reggae/Caribbean";
+        }
+
+        // jazz + blues
+        if (
+            includesAny([
+                "jazz",
+                "swing",
+                "bossa",
+                "blues",
+                "boogie-woogie",
+                "big band",
+                "classic blues",
+                "modern blues",
+                "hard bop",
+                "bebop",
+                "ragtime",
+                "lounge",
+                "exotica"
+            ])
+        ) {
+            // return "Jazz/Blues";
+            return "Jazz";
+        }
+
+        // pop-ish catch-alls and adult
+        if (s.includes("pop")) {
+            return "Pop";
+        }
+        if (includesAny([
+            "easy listening",
+            "adult standards",
+            "orchestral",
+            "christmas",
+            "musicals",
+            "schlager",
+            "worship",
+            "ccm",
+            "christian",
+            "lullaby",
+            "children's music",
+            "chanson",
+            "variété française",
+            "variete francaise",
+            "classical",
+            "opera",
+            "kundiman",
+            "iskelmä",
+            "dansband",
+            "hollands",
+            "choral",
+            "gregorian chant",
+            "medieval",
+            "neue deutsche welle",
+            "requiem",
+            "chamber music",
+            "comedy",
+            "spoken word"
+        ])) {
+            return "Pop";
+        }
+        return "Other/Unknown";
     }
 
     function canonicalizeGenre(rawGenre) {
-        const value = (rawGenre || "").toLowerCase().trim();
-        if (!value) return "";
-        if (genreCanonicalCache.has(value)) return genreCanonicalCache.get(value);
-        const tokens = tokenizeGenre(value);
-        const useTokenSet = canonicalGenreTokenSet.size > 0;
-        let bestToken = "";
-        let bestCount = -Infinity;
-        tokens.forEach(token => {
-            if (useTokenSet && !canonicalGenreTokenSet.has(token)) return;
-            const count = genreTokenCounts.get(token) || 0;
-            if (count > bestCount) {
-                bestToken = token;
-                bestCount = count;
-            }
-        });
-        if (!bestToken && tokens.length) {
-            let fallbackToken = "";
-            let fallbackCount = -Infinity;
-            tokens.forEach(token => {
-                const count = genreTokenCounts.get(token) || 0;
-                if (count > fallbackCount) {
-                    fallbackToken = token;
-                    fallbackCount = count;
-                }
-            });
-            bestToken = fallbackToken || tokens[0];
+        if (genreCanonicalCache.has(rawGenre)) {
+            return genreCanonicalCache.get(rawGenre);
         }
-        const canonicalBase = canonicalTokenOverrides.get(bestToken) || bestToken;
-        const canonical = canonicalBase || value;
-        genreCanonicalCache.set(value, canonical);
-        return canonical;
+        const supergenre = toSuperGenre(rawGenre);
+        genreCanonicalCache.set(rawGenre, supergenre);
+        return supergenre;
+    }
+
+    function tokenizeGenre(rawGenre) {
+        if (!rawGenre) return [];
+        return rawGenre
+            .toLowerCase()
+            .split(/[^a-z0-9&]+/)
+            .map(token => token.trim())
+            .filter(Boolean);
     }
 
     function hashGenreToHue(str) {
@@ -395,7 +709,9 @@
         if (year < ERA_BUCKET_START || year > ERA_BUCKET_END) return null;
         const offset = Math.floor((year - ERA_BUCKET_START) / ERA_BUCKET_SIZE);
         const startYear = ERA_BUCKET_START + offset * ERA_BUCKET_SIZE;
-        return startYear.toString();
+        const finalEraLabel = Number(eras[eras.length - 1]?.label) || startYear;
+        const clampedStart = Math.min(startYear, finalEraLabel);
+        return clampedStart.toString();
     }
 
     function formatFeatureName(name) {
@@ -404,13 +720,12 @@
     }
 
     function getPrimaryGenre(label) {
-        const decadeEntries = ERA_GENRE_COUNTS[label];
-        if (!decadeEntries || !decadeEntries.length) return label;
-        return canonicalizeGenre(decadeEntries[0].genre);
+        return label;
     }
 
     function formatGenreDisplay(genre) {
         if (!genre) return "";
+        if (/[A-Z]/.test(genre)) return genre.trim();
         const lower = genre.toLowerCase();
         if (lower === "r&b" || lower === "rnb" || lower === "rnb/soul") {
             return "Rhythm and Blues";
@@ -486,6 +801,10 @@
             const parsedEntries = [];
             const featureDomains = new Map();
             const yearlyLeaders = new Map();
+            const bucketGenreDistributions = new Map();
+            const totalSupergenreCounts = new Map();
+            const unknownGenreCounts = new Map();
+            let missingGenreCount = 0;
 
             lines.forEach(line => {
                 let record;
@@ -508,8 +827,18 @@
                 const cleanedGenres = rawGenres
                     .map(g => (g || "").toLowerCase().trim())
                     .filter(Boolean);
+                if (!cleanedGenres.length) {
+                    missingGenreCount += 1;
+                }
 
                 cleanedGenres.forEach(rawKey => {
+                    const sg = toSuperGenre(rawKey);
+                    if (sg === "Other/Unknown") {
+                        unknownGenreCounts.set(
+                            rawKey,
+                            (unknownGenreCounts.get(rawKey) || 0) + 1
+                        );
+                    }
                     tokenizeGenre(rawKey).forEach(token => {
                         if (!token) return;
                         genreTokenCounts.set(
@@ -540,10 +869,15 @@
                     features: featureValues
                 });
 
-                const peakRank = Number(record["peak-rank"]) || Number(record.rank) || 101;
-                const weeks = Number(record["weeks-on-board"]) || 0;
-                const score = (101 - Math.min(peakRank, 101)) * weeks;
-                if (!Number.isFinite(score) || score <= 0) return;
+                const peakRank = Number(record["peak-rank"]);
+                const rankVal = Number.isFinite(peakRank)
+                    ? peakRank
+                    : Number(record.rank);
+                const safeRank = Number.isFinite(rankVal) ? rankVal : 100;
+                const weeksRaw = Number(record["weeks-on-board"]);
+                const weeks = Number.isFinite(weeksRaw) && weeksRaw > 0 ? weeksRaw : 1;
+                const score = (101 - Math.min(safeRank, 101)) * weeks;
+                if (!Number.isFinite(score)) return;
 
                 const artists = Array.isArray(record.artists)
                     ? record.artists.join(", ")
@@ -602,6 +936,10 @@
                         genre,
                         (genreCounts.get(genre) || 0) + 1
                     );
+                    totalSupergenreCounts.set(
+                        genre,
+                        (totalSupergenreCounts.get(genre) || 0) + 1
+                    );
                 });
                 bucketGenreCounts.set(label, genreCounts);
 
@@ -651,6 +989,43 @@
                 }
             });
 
+            bucketGenreCounts.forEach((genreMap, label) => {
+                const total = Array.from(genreMap.values()).reduce(
+                    (sum, val) => sum + (Number.isFinite(val) ? val : 0),
+                    0
+                );
+                let dist = Array.from(genreMap.entries())
+                    .filter(([genre]) => genre && genre !== "unknown" && genre !== "Other/Unknown")
+                    .map(([genre, count]) => ({
+                        genre,
+                        count: Number.isFinite(count) ? count : 0,
+                        pct:
+                            total > 0
+                                ? Math.round(((Number.isFinite(count) ? count : 0) / total) * 100)
+                                : 0
+                    }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5);
+
+                bucketGenreDistributions.set(label, dist);
+            });
+
+            if (typeof console !== "undefined" && console.table) {
+                const supergenreSummary = SUPERGENRE_ORDER.map(key => ({
+                    supergenre: key,
+                    count: totalSupergenreCounts.get(key) || 0
+                }));
+                console.table(supergenreSummary, ["supergenre", "count"]);
+            } else if (typeof console !== "undefined") {
+                console.log(
+                    "Supergenre counts:",
+                    SUPERGENRE_ORDER.map(key => ({
+                        supergenre: key,
+                        count: totalSupergenreCounts.get(key) || 0
+                    }))
+                );
+            }
+
             const bucketFeatureAverages = new Map();
             bucketFeatureAcc.forEach((genreMap, label) => {
                 const genreAverages = new Map();
@@ -696,19 +1071,38 @@
                 }
             });
 
+            if (typeof console !== "undefined") {
+                const unknownList = Array.from(unknownGenreCounts.entries()).sort(
+                    (a, b) => (b[1] || 0) - (a[1] || 0)
+                );
+                console.log(
+                    "[eras] unmatched genres -> Other/Unknown",
+                    unknownList.length ? unknownList : "none"
+                );
+                if (missingGenreCount > 0) {
+                    console.log("[eras] rows missing genres:", missingGenreCount);
+                }
+            }
+
+            // renderUnknownGenreDebug(unknownGenreCounts, missingGenreCount);
+
             return {
                 topGenres,
                 bucketFeatureAverages,
+                bucketGenreDistributions,
                 bucketTopTracks,
-                featureDomains
+                featureDomains,
+                unknownGenreCounts
             };
         } catch (err) {
             console.warn("Failed to load billboard genres", err);
             return {
                 topGenres: new Map(),
                 bucketFeatureAverages: new Map(),
+                bucketGenreDistributions: new Map(),
                 bucketTopTracks: new Map(),
-                featureDomains: new Map()
+                featureDomains: new Map(),
+                unknownGenreCounts: new Map()
             };
         }
     }
@@ -717,22 +1111,39 @@
         topGenres: topGenreMap,
         bucketFeatureAverages,
         bucketTopTracks,
-        featureDomains
+        bucketGenreDistributions,
+        featureDomains,
+        unknownGenreCounts
     } = await loadBillboardSummary();
+
+    const HARDCODED_PRIMARY_GENRES = new Map([
+        ["1980", "rock"],
+        ["1985", "edm"],
+        ["1990", "r&b"],
+        ["1995", "r&b"],
+        ["2000", "country"],
+        ["2005", "country"],
+        ["2010", "hip hop"],
+        ["2015", "pop"]
+    ]);
 
     let featuredKeys = new Set();
 
     eras.forEach((era, idx) => {
-        const inferredGenre = topGenreMap.get(era.label);
+        const hardcoded = HARDCODED_PRIMARY_GENRES.get(era.label);
+        const inferredRaw = topGenreMap.get(era.label);
+        const inferredGenre =
+            inferredRaw === "Other/Unknown" ? null : inferredRaw;
         const fallbackGenre = getPrimaryGenre(era.label);
         const resolvedGenre =
-            canonicalizeGenre(inferredGenre || fallbackGenre) || "pop";
+            canonicalizeGenre(hardcoded || inferredGenre || fallbackGenre) || "pop";
         const displayGenre = formatGenreDisplay(resolvedGenre);
         const theme = getThemeForGenre(resolvedGenre);
         const featureAverageMap =
             bucketFeatureAverages.get(era.label) || new Map();
         era.primaryGenre = displayGenre;
         era.genreKey = resolvedGenre;
+        era.genreKeyRaw = resolvedGenre;
         era.theme = theme;
         era.topTracks = bucketTopTracks.get(era.label) || [];
         era.featureAverages = featureAverageMap;
@@ -755,7 +1166,146 @@
         }
         preferredComparisons.forEach(entry => featuredKeys.add(entry.key));
         era.featureComparisons = preferredComparisons;
+        if (FEATURE_HIGHLIGHT_OVERRIDES[era.genreKey]) {
+            era.featureHighlightsOverride = FEATURE_HIGHLIGHT_OVERRIDES[era.genreKey];
+        }
+        const dist = bucketGenreDistributions.get(era.label);
+        if (dist && dist.length) {
+            era.genreDistribution = dist.slice(0, 5);
+        } else {
+            era.genreDistribution = [];
+        }
     });
+
+    function buildLegacyChart() {
+        const margin = { top: 28, right: 28, bottom: 24, left: 140 };
+        const width = 680;
+        const height = 280;
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        chartSvg = d3
+            .create("svg")
+            .attr("class", "era-legacy-chart__svg")
+            .attr("viewBox", `0 0 ${width} ${height}`);
+
+        const root = chartSvg
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const rowGroup = root.append("g").attr("class", "legacy-rows");
+        const placeholder = root
+            .append("text")
+            .attr("class", "legacy-placeholder")
+            .attr("x", innerWidth / 2)
+            .attr("y", innerHeight / 2)
+            .attr("text-anchor", "middle")
+            .attr("fill", "#94a3b8")
+            .style("font-size", "14px")
+            .text("No feature data for this era.");
+
+        const yScale = d3.scaleBand().padding(0.4);
+        const xScale = d3.scaleLinear().domain([0, 1]).range([0, innerWidth]);
+
+        updateGenreChart = (label, theme, genreKey) => {
+            const labelMap = bucketFeatureAverages.get(label) || new Map();
+            const genreAvg = labelMap.get(genreKey) || {};
+            const baseAvg = labelMap.get(ALL_GENRE_KEY) || {};
+
+            const data = FEATURE_KEYS.map(key => {
+                const g = Number(genreAvg[key]);
+                const b = Number(baseAvg[key]);
+                const hasG = Number.isFinite(g);
+                const hasB = Number.isFinite(b);
+                if (!hasG && !hasB) return null;
+                const genreVal = hasG ? g : b;
+                const baseVal = hasB ? b : g;
+                return {
+                    key,
+                    genreVal,
+                    baseVal,
+                    genreNorm: normalizeFeatureValue(key, genreVal, featureDomains),
+                    baseNorm: normalizeFeatureValue(key, baseVal, featureDomains)
+                };
+            }).filter(Boolean);
+
+            placeholder.style("display", data.length ? "none" : null);
+            if (!data.length) return;
+
+            yScale.domain(data.map(d => d.key)).range([0, innerHeight]);
+
+            const rows = rowGroup
+                .selectAll(".legacy-row")
+                .data(data, d => d.key)
+                .join(enter => {
+                    const g = enter.append("g").attr("class", "legacy-row");
+                    g.append("text")
+                        .attr("class", "legacy-label")
+                        .attr("x", -12)
+                        .attr("y", 0)
+                        .attr("text-anchor", "end")
+                        .attr("dominant-baseline", "middle")
+                        .style("fill", "#0f172a")
+                        .style("font-weight", 600);
+                    g.append("rect")
+                        .attr("class", "legacy-bar baseline")
+                        .attr("y", -8)
+                        .attr("height", 16);
+                    g.append("rect")
+                        .attr("class", "legacy-bar genre")
+                        .attr("y", -8)
+                        .attr("height", 16);
+                    g.append("text")
+                        .attr("class", "legacy-value genre")
+                        .attr("x", innerWidth + 8)
+                        .attr("y", -2)
+                        .attr("text-anchor", "start")
+                        .attr("dominant-baseline", "middle")
+                        .style("fill", "#0f172a");
+                    g.append("text")
+                        .attr("class", "legacy-value baseline")
+                        .attr("x", innerWidth + 8)
+                        .attr("y", 10)
+                        .attr("text-anchor", "start")
+                        .attr("dominant-baseline", "middle")
+                        .style("fill", "#64748b");
+                    return g;
+                });
+
+            rows.attr(
+                "transform",
+                d => `translate(0, ${yScale(d.key) + yScale.bandwidth() / 2})`
+            );
+
+            rows.select(".legacy-label").text(d => formatFeatureName(d.key));
+
+            const baseColor = theme?.accentSoft || "#cbd5f5";
+            const genreColor = theme?.accent || "#2563eb";
+
+            rows
+                .select("rect.baseline")
+                .attr("width", d => xScale(Math.max(0, Math.min(1, d.baseNorm))))
+                .attr("fill", baseColor)
+                .attr("opacity", 0.45);
+
+            rows
+                .select("rect.genre")
+                .attr("width", d => xScale(Math.max(0, Math.min(1, d.genreNorm))))
+                .attr("fill", genreColor)
+                .attr("opacity", 0.9)
+                .attr("stroke", "none");
+
+            rows
+                .select("text.legacy-value.genre")
+                .text(d => formatFeatureValue(d.key, d.genreVal));
+
+            rows
+                .select("text.legacy-value.baseline")
+                .text(d => `Era avg ${formatFeatureValue(d.key, d.baseVal)}`);
+        };
+    }
+
+    buildLegacyChart();
 
     const idToIndex = new Map(eras.map((d, i) => [d.id, i]));
 
@@ -855,7 +1405,8 @@
                 .style("--panel-accent", theme.accent)
                 .style("--panel-accent-soft", theme.accentSoft || theme.accent)
                 .style("--panel-pill-bg", theme.pillBg)
-                .style("--panel-text", theme.text);
+                .style("--panel-text", theme.text)
+                .attr("data-genre-key", (d.genreKeyRaw || d.genreKey || "").toLowerCase());
         });
 
     const header = shell.append("div").attr("class", "era-panel-header");
@@ -872,6 +1423,36 @@
 
     const chartBlock = shell.append("div").attr("class", "era-chart-block");
 
+    // const genreMixBlock = chartBlock.append("div").attr("class", "genre-mix");
+    // genreMixBlock.append("h3").attr("class", "block-title").text("Top 5 Genre Mix in This Era");
+    //
+    // const genreChips = genreMixBlock
+    //     .append("div")
+    //     .attr("class", "genre-mix__chips")
+    //     .selectAll(".genre-chip")
+    //     .data(d => d.genreDistribution || [])
+    //     .join("div")
+    //     .attr("class", "genre-chip");
+    //
+    // genreChips
+    //     .append("span")
+    //     .attr("class", "genre-chip__name")
+    //     .text(d => formatGenreDisplay(d.genre));
+    //
+    // const chipBars = genreChips
+    //     .append("div")
+    //     .attr("class", "genre-chip__bar");
+    //
+    // chipBars
+    //     .append("div")
+    //     .attr("class", "genre-chip__bar-fill")
+    //     .style("width", d => `${Math.max(0, Math.min(100, d.pct || 0))}%`);
+    //
+    // genreChips
+    //     .append("span")
+    //     .attr("class", "genre-chip__value")
+    //     .text(d => `${d.pct || 0}%`);
+
     chartBlock.append("h3").attr("class", "block-title").text("Feature Highlights");
 
     const featureCardsContainer = chartBlock
@@ -880,7 +1461,9 @@
         .each(function (d) {
             const container = d3.select(this);
             container.html("");
-            const cardsData = d.featureComparisons || [];
+            const cardsData =
+                d.featureHighlightsOverride || d.featureComparisons || [];
+            const isOverride = Array.isArray(d.featureHighlightsOverride);
             if (!cardsData.length) {
                 container
                     .append("p")
@@ -893,7 +1476,19 @@
                 .selectAll(".feature-card")
                 .data(cardsData)
                 .join("div")
-                .attr("class", "feature-card");
+                .attr("class", d =>
+                    isOverride
+                        ? "feature-card feature-card--override"
+                        : "feature-card"
+                )
+                .style("border", d =>
+                    isOverride ? "1px dashed var(--panel-accent, #2563eb)" : null
+                )
+                .style("background", d =>
+                    isOverride
+                        ? "linear-gradient(135deg, rgba(37,99,235,0.06), rgba(37,99,235,0.02))"
+                        : null
+                );
 
             const headers = cards
                 .append("div")
@@ -902,60 +1497,79 @@
             headers
                 .append("span")
                 .attr("class", "feature-card__label")
-                .text(item => formatFeatureName(item.key));
+                .text(item =>
+                    isOverride
+                        ? formatFeatureName(interpretOverride(item).label)
+                        : formatFeatureName(item.key)
+                );
 
             headers
                 .append("span")
                 .attr("class", "feature-card__delta")
-                .text(item => formatDeltaText(item.key, item.delta));
+                .style("color", item => {
+                    if (!isOverride) return null;
+                    const dir = interpretOverride(item).direction;
+                    if (dir === "high") return "#16a34a";
+                    if (dir === "low") return "#ff6b6b";
+                    return "#0f172a";
+                })
+                .text(item => {
+                    if (!isOverride) return formatDeltaText(item.key, item.delta);
+                    const { direction } = interpretOverride(item);
+                    if (direction === "high") return "↑ High";
+                    if (direction === "low") return "↓ Low";
+                    return "";
+                });
 
-            const progress = cards
-                .append("div")
-                .attr("class", "feature-progress");
+            if (!isOverride) {
+                const progress = cards
+                    .append("div")
+                    .attr("class", "feature-progress");
 
-            progress
-                .append("div")
-                .attr("class", "feature-progress__baseline")
-                .style("width", d =>
-                    `${Math.round(Math.max(0, Math.min(1, d.basePercent || 0)) * 100)}%`
-                );
+                progress
+                    .append("div")
+                    .attr("class", "feature-progress__baseline")
+                    .style("width", d =>
+                        `${Math.round(Math.max(0, Math.min(1, d.basePercent || 0)) * 100)}%`
+                    );
 
-            progress
-                .append("div")
-                .attr("class", "feature-progress__value")
-                .style("width", d =>
-                    `${Math.round(Math.max(0, Math.min(1, d.genrePercent || 0)) * 100)}%`
-                );
+                progress
+                    .append("div")
+                    .attr("class", "feature-progress__value")
+                    .style("width", d =>
+                        `${Math.round(Math.max(0, Math.min(1, d.genrePercent || 0)) * 100)}%`
+                    );
 
-            const values = cards
-                .append("div")
-                .attr("class", "feature-card__values");
+                const values = cards
+                    .append("div")
+                    .attr("class", "feature-card__values");
 
-            values
-                .append("span")
-                .attr("class", "feature-card__value feature-card__value--genre")
-                .text(item => formatFeatureValue(item.key, item.genreValue));
+                values
+                    .append("span")
+                    .attr("class", "feature-card__value feature-card__value--genre")
+                    .text(item => formatFeatureValue(item.key, item.genreValue));
 
-            values
-                .append("span")
-                .attr("class", "feature-card__value feature-card__value--baseline")
-                .text(item => `Era avg ${formatFeatureValue(item.key, item.baseValue)}`);
+                values
+                    .append("span")
+                    .attr("class", "feature-card__value feature-card__value--baseline")
+                    .text(item => `Era avg ${formatFeatureValue(item.key, item.baseValue)}`);
+            }
         });
 
-    /*
-    const legacyChartBlock = shell.append("div").attr("class", "era-legacy-chart");
-    legacyChartBlock
-        .append("h3")
-        .attr("class", "block-title")
-        .text("Legacy Feature Profile");
-    legacyChartBlock.append("div").attr("class", "era-legacy-chart__viz");
-    */
+
+    // const legacyChartBlock = shell.append("div").attr("class", "era-legacy-chart");
+    // legacyChartBlock
+    //     .append("h3")
+    //     .attr("class", "block-title")
+    //     .text("Legacy Feature Profile");
+    // legacyChartBlock.append("div").attr("class", "era-legacy-chart__viz");
+    
     const tracksBlock = shell.append("div").attr("class", "era-tracks-block");
 
     tracksBlock
         .append("h3")
         .attr("class", "block-title")
-        .text(d => `Top ${d.primaryGenre || "era"} Songs in This Era`);
+        .text(d => `Most Popular Songs in This Era`);
 
     const tracksWrap = tracksBlock.append("div").attr("class", "era-top-tracks");
 
@@ -987,11 +1601,6 @@
         .append("div")
         .attr("class", "track-artists")
         .text(d => d.artists || "Unknown");
-
-    let updateGenreChart = null;
-    let chartSvg = null;
-
-    // Legacy bar chart intentionally commented out for now.
 
     // -------- active era state + interactions --------
 

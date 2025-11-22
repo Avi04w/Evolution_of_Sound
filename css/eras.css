@@ -11,10 +11,11 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     gap: 2.25rem;
     position: relative;
-    padding-top: 6rem;
+    padding-top: 2.5rem;
+    padding-left: clamp(1.25rem, 6vw, 8rem);
 }
 
 .era-heading {
@@ -41,11 +42,11 @@
 }
 
 .era-layout {
-    max-width: 1300px;
-    width: min(100%, 1150px);
-    margin: 0 auto;
+    max-width: 1500px;
+    width: min(100%, 1350px);
+    margin: 0;
     display: flex;
-    gap: clamp(1.5rem, 4vw, 4rem);
+    gap: clamp(1.25rem, 3vw, 3rem);
     align-items: center;
     border-radius: 32px;
     background: #ffffff;
@@ -128,6 +129,8 @@
     flex: 1 1 auto;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
+    padding-left: clamp(0.5rem, 4vw, 80px);
 }
 
 .era-panel {
@@ -140,14 +143,77 @@
 }
 
 .era-panel-inner {
-    background: var(--panel-bg, #ffffff);
-    border: 1px solid var(--panel-border, rgba(15, 23, 42, 0.08));
+    background: rgba(245, 245, 246, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+    color: #f7f7ff;
+    backdrop-filter: blur(6px);
+    position: relative;
+    overflow: hidden;
     border-radius: 28px;
-    padding: clamp(1.5rem, 2.4vw, 2.5rem);
-    box-shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
-    color: var(--panel-text, #0f172a);
-    width: min(100%, 1000px);
+    padding: clamp(2.4rem, 3.8vw, 3.6rem);
+    width: min(100%, 1400px);
     font-size: 0.95rem;
+    isolation: isolate;
+}
+
+.era-panel-inner::before,
+.era-panel-inner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+.era-panel-inner::before {
+    background-size: cover;
+    background-position: center;
+    filter: saturate(0.4) brightness(0.8);
+    opacity: 0.70; /* increase for more image, decrease for less */
+    z-index: 0;
+}
+
+.era-panel-inner[data-genre-key="rock"]::before {
+    background-image:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.25)),
+        url("../data/eras_backgrounds/rock-music-background-rock-poster-background-music-festival-concert-poster-flyer-design_873668-13263.avif");
+}
+.era-panel-inner[data-genre-key="r&b"]::before {
+    background-image:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.22)),
+        url("../data/eras_backgrounds/612f85b13ce5c.webp");
+}
+.era-panel-inner[data-genre-key="electronic/dance"]::before {
+    background-image:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.22)),
+        url("../data/eras_backgrounds/a71de320232e539d2743aec7bd3a3531.jpg");
+}
+.era-panel-inner[data-genre-key="hip-hop"]::before {
+    background-image:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.22)),
+        url("../data/eras_backgrounds/pexels-pixabay-162379.jpg");
+}
+.era-panel-inner[data-genre-key="pop"]::before {
+    background-image:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.22)),
+        url("../data/eras_backgrounds/360_F_633936686_aA71kOnPZCnEwVNDmof0J3dirrkfhu91.jpg");
+}
+.era-panel-inner[data-genre-key="country/folk/americana"],
+.era-panel-inner[data-genre-key="country"]::before {
+    background-image:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.22)),
+        url("../data/eras_backgrounds/acoustic-guitar-cowboy-hat-boots-600nw-2226107243.webp");
+}
+
+.era-panel-inner::after {
+    background: linear-gradient(180deg, rgba(12, 12, 26, 0.2) 0%, rgba(12, 12, 26, 0.28) 45%, rgba(12, 12, 26, 0.18) 100%);
+    z-index: 1;
+}
+
+.era-panel-inner > * {
+    position: relative;
+    z-index: 2;
 }
 
 .era-panel-header {
@@ -160,14 +226,15 @@
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.2em;
-    color: rgba(15, 23, 42, 0.45);
+    color: rgba(247, 247, 255, 0.75);
 }
 
 .era-genre-name {
     margin: 0;
     font-size: clamp(2rem, 4vw, 2.8rem);
     letter-spacing: 0.01em;
-    color: var(--panel-text, #0f172a);
+    color: #fdfdff;
+    text-shadow: 0 3px 18px rgba(0, 0, 0, 0.45);
 }
 
 .era-genre-description {
@@ -193,7 +260,31 @@
     flex-direction: column;
     gap: 0.3rem;
     cursor: pointer;
-    transition: transform 200ms ease, box-shadow 200ms ease;
+    transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
+    min-height: 160px;
+    height: 160px;
+}
+
+.era-track:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.era-panel-inner[data-genre-key="electronic/dance"] .era-track {
+    background: rgba(125, 211, 252, 0.4);
+}
+
+.era-panel-inner[data-genre-key="electronic/dance"] .era-track:hover {
+    background: rgba(125, 211, 252, 0.16);
+}
+
+.era-panel-inner[data-genre-key="pop"] .era-track {
+    background: rgba(196, 181, 253, 0.4);
+}
+
+.era-panel-inner[data-genre-key="pop"] .era-track:hover {
+    background: rgba(196, 181, 253, 0.2);
 }
 
 .era-track.is-selected {
@@ -205,7 +296,7 @@
     font-size: 0.75rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: rgba(15, 23, 42, 0.45);
+    color: #000000;
 }
 
 .track-title {
@@ -241,13 +332,60 @@
     font-size: 1rem;
     letter-spacing: 0.24em;
     text-transform: uppercase;
-    color: rgba(15, 23, 42, 0.45);
+    color: #f9f9ff;
     margin: 0 0 0.75rem;
 }
 
 .era-chart-block,
 .era-tracks-block {
     margin-top: 1.2rem;
+}
+
+.genre-mix {
+    margin-top: 1rem;
+}
+
+.genre-mix__chips {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+}
+
+.genre-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: rgba(106, 106, 119, 0.95);
+    color: #f9f9ff;
+}
+
+.genre-chip__name {
+    font-weight: 600;
+    color: #f9f9ff;
+}
+
+.genre-chip__bar {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.genre-chip__bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background: #22d3ee;
+}
+
+.genre-chip__value {
+    font-size: 0.9rem;
+    color: rgba(249, 249, 255, 0.8);
 }
 
 .era-feature-cards {
@@ -258,13 +396,14 @@
 }
 
 .feature-card {
-    background: rgba(15, 23, 42, 0.02);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(34, 211, 238, 0.18);
+    border: 1px solid #ffffff !important;
     border-radius: 18px;
     padding: 1rem 1.1rem 1.15rem;
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+    color: #f9f9ff;
 }
 
 .feature-card__header {
@@ -273,19 +412,19 @@
     align-items: center;
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--panel-text, #0f172a);
+    color: #e8f9ff;
 }
 
 .feature-card__delta {
     font-size: 0.85rem;
-    color: var(--panel-accent, #2563eb);
+    color: #ffffff;
 }
 
 .feature-progress {
     position: relative;
     height: 10px;
     border-radius: 999px;
-    background: rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.08);
     overflow: hidden;
 }
 
@@ -298,30 +437,30 @@
 }
 
 .feature-progress__baseline {
-    background: rgba(15, 23, 42, 0.15);
+    background: rgba(255, 255, 255, 0.35);
 }
 
 .feature-progress__value {
-    background: var(--panel-accent, #2563eb);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }
 
 .feature-card__values {
     display: flex;
     justify-content: space-between;
     font-size: 0.85rem;
-    color: rgba(15, 23, 42, 0.65);
+    color: rgba(40, 40, 50, 0.85);
 }
 
 .feature-card__value--genre {
     font-weight: 600;
-    color: var(--panel-text, #0f172a);
+    color: #1f2937;
 }
 
 .feature-card-placeholder {
     margin: 0;
     font-size: 0.95rem;
-    color: rgba(15, 23, 42, 0.55);
+    color: rgba(40, 40, 50, 0.75);
 }
 
 .era-legacy-chart {
