@@ -265,6 +265,7 @@ class FeatureTimeline {
 
         // --- Filter events for the current feature ---
         const featureEvents = this.events[this.feature] || [];
+        this.chart.selectAll(".event-marker").remove();
         const markers = this.chart.selectAll(".event-marker")
             .data(featureEvents, d => d.year);
         const markersEnter = markers.enter()
