@@ -1,3 +1,7 @@
+#bubble-viz-container {
+  position: relative;
+}
+
 .bubble-viz-bubble:hover {
   opacity: 1;
   cursor: pointer;
