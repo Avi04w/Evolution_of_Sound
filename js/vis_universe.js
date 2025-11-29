@@ -26,7 +26,7 @@ class MusicUniverseVisualization {
             requireModifierForZoom: false,
             ...options
         };
-        
+
         // Initialize managers
         this.dataManager = new DataManager(dataUrl);
         this.sceneManager = new SceneManager(containerId, options);
@@ -35,7 +35,7 @@ class MusicUniverseVisualization {
         this.billboardController = null;
         this.interactionManager = null;
         this.uiManager = null;
-        
+
         // Three.js components (delegated to SceneManager, but keep references for compatibility)
         this.scene = null;
         this.camera = null;
@@ -43,14 +43,14 @@ class MusicUniverseVisualization {
         this.controls = null;
         this.points = null;
         this.geometry = null;
-        
+
         // Data and state (delegated to DataManager, but keep references for compatibility)
         this.parsedData = [];
         this.currentColorFeature = 'none';
         this.animationFrameId = null;
         this.allGenres = [];
         this.selectedGenre = null;
-        
+
         // Billboard data (delegated to DataManager, but keep references for compatibility)
         this.billboardData = [];
         this.availableYears = [];
@@ -60,18 +60,18 @@ class MusicUniverseVisualization {
         this.billboardMode = false;
         this.timelineIsPlaying = false;
         this.timelineAnimationId = null;
-        
+
         // Interaction
         this.raycaster = null;
         this.mouse = null;
         this.hoveredPoint = null;
         this.tooltip = null;
-        
+
         // PCA Loading Vectors (delegated to DataManager, but keep reference for compatibility)
         this.loadingVectors = null;
         this.loadingArrows = [];
         this.showLoadings = false;
-        
+
         // Dimensions (will be set dynamically)
         this.width = 0;
         this.height = 0;
@@ -84,7 +84,7 @@ class MusicUniverseVisualization {
         try {
             // Load all data through DataManager
             await this.dataManager.loadAllData();
-            
+
             // Sync data to this instance for backwards compatibility
             this.parsedData = this.dataManager.getTrackData();
             this.allGenres = this.dataManager.getAllGenres();
@@ -92,14 +92,14 @@ class MusicUniverseVisualization {
             this.availableYears = this.dataManager.getAvailableYears();
             this.availableWeeks = this.dataManager.getAvailableWeeks();
             this.loadingVectors = this.dataManager.getPCALoadings();
-            
+
             // Initialize scene through SceneManager
             this.sceneManager.initialize();
             this.sceneManager.createPointCloud(this.parsedData);
             this.sceneManager.createLoadingArrows(this.loadingVectors);
             // Will be updated with actual feature after receiving message from parent
             this.sceneManager.createLoadingVectorLegend(null);
-            
+
             // Sync scene objects for backwards compatibility
             this.scene = this.sceneManager.getScene();
             this.camera = this.sceneManager.getCamera();
@@ -109,20 +109,20 @@ class MusicUniverseVisualization {
             this.points = this.sceneManager.getPoints();
             this.raycaster = this.sceneManager.getRaycaster();
             this.mouse = this.sceneManager.getMouse();
-            
+
             // Initialize ColorManager
             this.colorManager = new ColorManager(this.containerId, this.sceneManager, this.dataManager);
-            
+
             // Pass colorManager to SceneManager for legend positioning
             this.sceneManager.setColorManager(this.colorManager);
-            
+
             // Initialize BillboardController
             this.billboardController = new BillboardController(this.dataManager, this.colorManager);
             this.billboardController.setUpdateCallback((state) => {
                 this.billboardMode = state.billboardMode;
                 this.selectedYear = state.selectedYear;
                 this.currentWeek = state.currentWeek;
-                
+
                 // Update InteractionManager filter state
                 if (this.interactionManager) {
                     this.interactionManager.setFilterState(state.billboardMode, state.selectedYear, state.currentWeek);
@@ -141,24 +141,24 @@ class MusicUniverseVisualization {
                     clearGenreButton.classList.add('hidden');
                 }
             });
-            
+
             // Initialize InteractionManager
             this.interactionManager = new InteractionManager(this.containerId, this.sceneManager, this.dataManager);
             this.interactionManager.initialize();
             this.interactionManager.setFilterChangeCallback(() => {
                 this.updateColors(this.currentColorFeature, true);
             });
-            
+
             // Sync state from InteractionManager for backwards compatibility
             this.tooltip = this.interactionManager.tooltip;
             this.hoveredPoint = null; // Will be read from interactionManager when needed
-            
+
             // Create timeline UI
             this.createTimeline();
-            
+
             // Start animation first to ensure rendering is active
             this.sceneManager.startAnimation();
-            
+
             // Ensure scene is in proper state by explicitly setting to acousticness
             setTimeout(() => {
                 if (this.colorManager) {
@@ -167,7 +167,7 @@ class MusicUniverseVisualization {
                     console.log('Scene initialized with acousticness colors');
                 }
             }, 100);
-            
+
             // Initialize UIManager
             this.uiManager = new UIManager(this.sceneManager, this.dataManager);
             this.uiManager.setCallbacks({
@@ -203,13 +203,13 @@ class MusicUniverseVisualization {
                 if (event.data && event.data.type === 'set-feature') {
                     const feature = event.data.feature;
                     const initialFeature = this.sceneManager.getInitialFeature();
-                    
+
                     // If this is the first color update
                     if (!this.colorManager.isReady) {
                         // Mark as ready immediately since we initialized with acousticness
                         this.colorManager.isReady = true;
                         this.colorManager.currentColorFeature = initialFeature;
-                        
+
                         // If feature is different from initial, transition to it
                         if (feature !== initialFeature) {
                             setTimeout(() => {
@@ -231,7 +231,7 @@ class MusicUniverseVisualization {
 
             // Request the initial feature from the parent window
             window.parent.postMessage({ type: 'get-initial-feature' }, '*');
-            
+
             console.log('Three.js visualization ready');
         } catch (error) {
             console.error('Error initializing visualization:', error);
@@ -243,16 +243,16 @@ class MusicUniverseVisualization {
      */
     updateLoadingVectorForFeature(feature) {
         if (!this.sceneManager || !this.sceneManager.vectorVisibility) return;
-        
+
         // Check if loading vectors are currently visible
         const loadingCheckbox = document.getElementById('show-loadings');
         const areLoadingsVisible = loadingCheckbox && loadingCheckbox.checked;
-        
+
         // Update visibility state for all features
         Object.keys(this.sceneManager.vectorVisibility).forEach(f => {
             const shouldShow = f === feature;
             this.sceneManager.vectorVisibility[f] = shouldShow;
-            
+
             // Update arrow visibility only if loadings are currently shown
             if (areLoadingsVisible) {
                 this.sceneManager.loadingArrows.forEach(arrow => {
@@ -261,7 +261,7 @@ class MusicUniverseVisualization {
                     }
                 });
             }
-            
+
             // Update legend item appearance
             if (this.sceneManager.loadingVectorLegend) {
                 const legendItem = this.sceneManager.loadingVectorLegend.querySelector(`[data-feature="${f}"]`);
@@ -284,7 +284,7 @@ class MusicUniverseVisualization {
      * Methods that delegate to BillboardController
      * ========================================
      */
-    
+
     /**
      * Populate year dropdown for Billboard timeline
      * Delegated to BillboardController
@@ -294,7 +294,7 @@ class MusicUniverseVisualization {
             this.billboardController.populateYearDropdown();
         }
     }
-    
+
     /**
      * Format date range for display
      * Delegated to BillboardController
@@ -305,7 +305,7 @@ class MusicUniverseVisualization {
         }
         return '';
     }
-    
+
     /**
      * Create Billboard timeline UI
      * Delegated to BillboardController
@@ -319,7 +319,7 @@ class MusicUniverseVisualization {
             this.timelineSortedYears = this.billboardController.timelineSortedYears;
         }
     }
-    
+
     /**
      * Start Billboard timeline animation
      * Delegated to BillboardController
@@ -330,7 +330,7 @@ class MusicUniverseVisualization {
             this.timelineIsPlaying = this.billboardController.isPlaying();
         }
     }
-    
+
     /**
      * Pause Billboard timeline animation
      * Delegated to BillboardController
@@ -342,14 +342,14 @@ class MusicUniverseVisualization {
             this.currentWeek = this.billboardController.getCurrentWeek();
         }
     }
-    
+
     /**
      * ========================================
      * DATA MANAGER ORCHESTRATION
      * Billboard query methods delegated to DataManager
      * ========================================
      */
-    
+
     /**
      * Get Billboard peak rankings for a specific year
      * Delegated to DataManager
@@ -357,7 +357,7 @@ class MusicUniverseVisualization {
     getBillboardPeakRankingsForYear(year) {
         return this.dataManager.getBillboardPeakRankingsForYear(year);
     }
-    
+
     /**
      * Get Billboard rankings up to a specific week
      * Delegated to DataManager
@@ -365,14 +365,14 @@ class MusicUniverseVisualization {
     getBillboardRankingsUpToWeek(targetWeek) {
         return this.dataManager.getBillboardRankingsUpToWeek(targetWeek);
     }
-    
+
     /**
      * ========================================
      * SCENE MANAGER ORCHESTRATION
      * Methods that delegate to SceneManager
      * ========================================
      */
-    
+
     /**
      * Toggle visibility of PCA loading vector arrows
      * Orchestrates between SceneManager and ColorManager
@@ -380,7 +380,7 @@ class MusicUniverseVisualization {
     toggleLoadingArrows(visible) {
         this.showLoadings = visible;
         this.colorManager.setLoadingVisibility(visible);
-        
+
         const wasVisible = this.sceneManager.toggleLoadingArrows(visible, (isVisible) => {
             // Recreate color legend with new size if it's visible
             const colorLegend = document.getElementById('color-legend');
@@ -393,7 +393,7 @@ class MusicUniverseVisualization {
                 }
             }
         });
-        
+
         return wasVisible;
     }
 
@@ -413,7 +413,7 @@ class MusicUniverseVisualization {
      * Methods that delegate to ColorManager
      * ========================================
      */
-    
+
     /**
      * Animate color transition between two color states
      * Delegated to ColorManager
@@ -423,7 +423,7 @@ class MusicUniverseVisualization {
             this.colorManager.animateColorTransition(fromColors, toColors, fromAlphas, toAlphas, duration);
         }
     }
-    
+
     /**
      * Update point colors based on selected feature or Billboard mode
      * Orchestrates between ColorManager and InteractionManager for filtering
@@ -513,38 +513,38 @@ class MusicUniverseVisualization {
         const targetPosition = new THREE.Vector3(7, 4, 7);
         const startTarget = this.sceneManager.controls.target.clone();
         const targetTarget = new THREE.Vector3(0, 0, 0);
-        
+
         const duration = 1000; // 1 second
         const startTime = performance.now();
-        
+
         const animateReset = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            
+
             // Ease out cubic
             const eased = 1 - Math.pow(1 - progress, 3);
-            
+
             // Interpolate camera position
             this.sceneManager.camera.position.lerpVectors(startPosition, targetPosition, eased);
-            
+
             // Interpolate controls target
             this.sceneManager.controls.target.lerpVectors(startTarget, targetTarget, eased);
-            
+
             if (progress < 1) {
                 requestAnimationFrame(animateReset);
             }
         };
-        
+
         requestAnimationFrame(animateReset);
     }
-    
+
     /**
      * ========================================
      * INTERACTION MANAGER ORCHESTRATION
      * Methods that delegate to InteractionManager
      * ========================================
      */
-    
+
     /**
      * Filter visualization by genre
      * Delegated to InteractionManager
