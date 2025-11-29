@@ -1,4 +1,4 @@
-# Evolution of Sound
+# The Evolution of Sound
 
 ## Overview
 We believe that music trends reflect cultural, technological and social changes. Therefore, we want to reveal more about those trends by visualizing 7 features, including `acousticness`, `danceability`, `energy`, `loudness`, `speechiness`, `tempo`, and `valance`, throughout the past four decodes of time starting at 1980. Our data are primarily focused on the billboard 100s, sourced from Kaggle and Spotify.
